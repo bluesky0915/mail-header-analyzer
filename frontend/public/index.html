@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>발신정보 분석기</title>
+  <style>
+    /* ===== 기본 리셋 & 변수 ===== */
+    :root {
+      --bg: #0d1117;
+      --bg2: #161b22;
+      --bg3: #21262d;
+      --border: #30363d;
+      --text: #e6edf3;
+      --text2: #8b949e;
+      --text3: #6e7681;
+      --green: #3fb950;
+      --green-bg: #0d2818;
+      --yellow: #d29922;
+      --yellow-bg: #2d2100;
+      --orange: #e3632a;
+      --orange-bg: #2d1500;
+      --red: #f85149;
+      --red-bg: #2d0000;
+      --blue: #58a6ff;
+      --blue-bg: #0d1f3c;
+      --purple: #bc8cff;
+      --radius: 8px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    /* ===== 헤더 ===== */
+    .site-header {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .site-header .logo { font-size: 22px; }
+    .site-header h1 { font-size: 18px; font-weight: 700; color: var(--text); }
+    .site-header .subtitle { font-size: 12px; color: var(--text2); margin-top: 2px; }
+
+    /* ===== 메인 레이아웃 ===== */
+    .main { max-width: 1280px; margin: 0 auto; padding: 24px 20px; }
+
+    /* ===== 업로드 패널 ===== */
+    .upload-panel {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    .upload-panel h2 { font-size: 15px; margin-bottom: 16px; color: var(--text2); }
+    .tabs { display: flex; gap: 0; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
+    .tab-btn {
+      background: none; border: none; color: var(--text2);
+      padding: 8px 20px; cursor: pointer; font-size: 13px;
+      border-bottom: 2px solid transparent; margin-bottom: -1px;
+      transition: all 0.2s;
+    }
+    .tab-btn.active { color: var(--blue); border-bottom-color: var(--blue); }
+    .tab-btn:hover { color: var(--text); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* 드래그앤드롭 영역 */
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 40px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+    .drop-zone:hover, .drop-zone.dragging {
+      border-color: var(--blue);
+      background: var(--blue-bg);
+    }
+    .drop-zone input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+    .drop-zone .icon { font-size: 36px; margin-bottom: 8px; }
+    .drop-zone p { color: var(--text2); font-size: 13px; }
+    .drop-zone .hint { font-size: 11px; color: var(--text3); margin-top: 4px; }
+    .drop-zone .filename {
+      display: none; color: var(--green); font-size: 13px;
+      margin-top: 8px; font-weight: 600;
+    }
+
+    /* 텍스트 입력 */
+    textarea.header-input {
+      width: 100%;
+      min-height: 200px;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 12px;
+      padding: 12px;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    textarea.header-input:focus { border-color: var(--blue); }
+
+    .btn-row { display: flex; gap: 10px; margin-top: 16px; align-items: center; }
+    .btn {
+      background: var(--blue); color: #fff; border: none;
+      border-radius: var(--radius); padding: 10px 24px;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      transition: opacity 0.2s; display: flex; align-items: center; gap: 6px;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-ghost {
+      background: var(--bg3); color: var(--text2); border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { background: var(--border); color: var(--text); }
+    .sample-link { color: var(--blue); font-size: 12px; cursor: pointer; text-decoration: underline; }
+
+    /* ===== 로딩 스피너 ===== */
+    .loading-overlay {
+      display: none;
+      text-align: center;
+      padding: 60px;
+    }
+    .spinner {
+      width: 48px; height: 48px;
+      border: 4px solid var(--border);
+      border-top-color: var(--blue);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-steps { color: var(--text2); font-size: 13px; }
+    .loading-step { padding: 2px 0; }
+    .loading-step.active { color: var(--blue); font-weight: 600; }
+    .loading-step.done { color: var(--green); }
+
+    /* ===== 결과 패널 ===== */
+    #results { display: none; }
+
+    /* 최종 판정 배너 */
+    .verdict-banner {
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .verdict-banner.SAFE    { background: var(--green-bg);  border: 1px solid var(--green); }
+    .verdict-banner.WARNING { background: var(--yellow-bg); border: 1px solid var(--yellow); }
+    .verdict-banner.SUSPICIOUS { background: var(--orange-bg); border: 1px solid var(--orange); }
+    .verdict-banner.DANGEROUS  { background: var(--red-bg);    border: 1px solid var(--red); }
+
+    .verdict-icon { font-size: 48px; flex-shrink: 0; }
+    .verdict-info { flex: 1; }
+    .verdict-label {
+      font-size: 24px; font-weight: 800; margin-bottom: 4px;
+    }
+    .verdict-banner.SAFE .verdict-label    { color: var(--green); }
+    .verdict-banner.WARNING .verdict-label { color: var(--yellow); }
+    .verdict-banner.SUSPICIOUS .verdict-label { color: var(--orange); }
+    .verdict-banner.DANGEROUS .verdict-label  { color: var(--red); }
+    .verdict-desc { color: var(--text2); font-size: 13px; }
+
+    /* 점수 게이지 */
+    .score-box { text-align: center; flex-shrink: 0; }
+    .score-number {
+      font-size: 40px; font-weight: 800; line-height: 1;
+      margin-bottom: 4px;
+    }
+    .verdict-banner.SAFE .score-number    { color: var(--green); }
+    .verdict-banner.WARNING .score-number { color: var(--yellow); }
+    .verdict-banner.SUSPICIOUS .score-number { color: var(--orange); }
+    .verdict-banner.DANGEROUS .score-number  { color: var(--red); }
+    .score-label { font-size: 11px; color: var(--text2); }
+
+    /* 점수 바 */
+    .score-bar-wrap {
+      background: var(--bg3); border-radius: 4px;
+      height: 8px; margin-top: 8px; width: 100px; overflow: hidden;
+    }
+    .score-bar { height: 100%; border-radius: 4px; transition: width 0.5s; }
+
+    /* ===== 요약 카드 행 ===== */
+    .summary-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .summary-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+    }
+    .summary-card .label { font-size: 11px; color: var(--text3); text-transform: uppercase; margin-bottom: 4px; }
+    .summary-card .value { font-size: 14px; font-weight: 600; color: var(--text); word-break: break-all; }
+    .badge {
+      display: inline-block; border-radius: 12px;
+      padding: 2px 10px; font-size: 11px; font-weight: 600;
+    }
+    .badge-green  { background: var(--green-bg);  color: var(--green);  border: 1px solid var(--green); }
+    .badge-red    { background: var(--red-bg);    color: var(--red);    border: 1px solid var(--red); }
+    .badge-yellow { background: var(--yellow-bg); color: var(--yellow); border: 1px solid var(--yellow); }
+    .badge-orange { background: var(--orange-bg); color: var(--orange); border: 1px solid var(--orange); }
+    .badge-gray   { background: var(--bg3);       color: var(--text2);  border: 1px solid var(--border); }
+    .badge-blue   { background: var(--blue-bg);   color: var(--blue);   border: 1px solid var(--blue); }
+
+    /* ===== 섹션 카드 ===== */
+    .section {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+    .section-header {
+      background: var(--bg3);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 18px;
+      display: flex; align-items: center; gap: 8px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .section-header h3 { font-size: 14px; font-weight: 600; flex: 1; }
+    .section-header .chevron { transition: transform 0.2s; }
+    .section-header.collapsed .chevron { transform: rotate(-90deg); }
+    .section-body { padding: 16px 18px; }
+    .section-body.collapsed { display: none; }
+
+    /* ===== 인증 결과 그리드 ===== */
+    .auth-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    @media (max-width: 700px) { .auth-grid { grid-template-columns: 1fr; } }
+    .auth-card {
+      border-radius: var(--radius);
+      padding: 14px;
+      border: 1px solid;
+    }
+    .auth-card.pass    { background: var(--green-bg);  border-color: var(--green); }
+    .auth-card.fail    { background: var(--red-bg);    border-color: var(--red); }
+    .auth-card.warning { background: var(--yellow-bg); border-color: var(--yellow); }
+    .auth-card.none    { background: var(--bg3);       border-color: var(--border); }
+    .auth-card .auth-type { font-size: 11px; font-weight: 700; color: var(--text3); margin-bottom: 4px; }
+    .auth-card .auth-status { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+    .auth-card.pass .auth-status    { color: var(--green); }
+    .auth-card.fail .auth-status    { color: var(--red); }
+    .auth-card.warning .auth-status { color: var(--yellow); }
+    .auth-card.none .auth-status    { color: var(--text2); }
+    .auth-card .auth-detail { font-size: 11px; color: var(--text2); }
+
+    /* ===== 도메인 분석 테이블 ===== */
+    .domain-table { width: 100%; border-collapse: collapse; }
+    .domain-table th {
+      text-align: left; font-size: 11px; color: var(--text3);
+      padding: 6px 10px; border-bottom: 1px solid var(--border);
+      text-transform: uppercase;
+    }
+    .domain-table td {
+      padding: 10px 10px; border-bottom: 1px solid var(--border);
+      font-size: 12px; vertical-align: top;
+    }
+    .domain-table tr:last-child td { border-bottom: none; }
+    .domain-table tr:hover td { background: var(--bg3); }
+    .domain-name { font-weight: 600; color: var(--blue); font-family: monospace; }
+    .record-list { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+    .record-tag {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 4px; padding: 1px 6px; font-size: 10px;
+      font-family: monospace; color: var(--text2);
+    }
+    .check-icon { font-size: 14px; }
+
+    /* ===== IP 분석 ===== */
+    .ip-card {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      margin-bottom: 10px;
+    }
+    .ip-card:last-child { margin-bottom: 0; }
+    .ip-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .ip-addr { font-family: monospace; font-size: 15px; font-weight: 700; color: var(--blue); }
+    .ip-details { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; }
+    .ip-detail-item { font-size: 11px; color: var(--text2); }
+    .ip-detail-item strong { color: var(--text); }
+
+    /* ===== 발신 경로 ===== */
+    .hop-list { position: relative; }
+    .hop-item {
+      display: flex; gap: 12px; margin-bottom: 12px;
+    }
+    .hop-line { display: flex; flex-direction: column; align-items: center; width: 20px; flex-shrink: 0; }
+    .hop-dot {
+      width: 12px; height: 12px; border-radius: 50%;
+      background: var(--blue); flex-shrink: 0; margin-top: 4px;
+    }
+    .hop-dot.first { background: var(--green); }
+    .hop-dot.last  { background: var(--text3); }
+    .hop-connector {
+      width: 2px; background: var(--border); flex: 1; margin-top: 2px;
+    }
+    .hop-content {
+      flex: 1; background: var(--bg3); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 10px 14px;
+    }
+    .hop-label { font-size: 10px; color: var(--text3); margin-bottom: 4px; text-transform: uppercase; }
+    .hop-from  { font-size: 13px; font-weight: 600; font-family: monospace; }
+    .hop-meta  { font-size: 11px; color: var(--text2); margin-top: 4px; }
+    .hop-ips   { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+    .hop-ip-tag {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 4px; padding: 1px 7px; font-size: 10px;
+      font-family: monospace; color: var(--text2);
+    }
+
+    /* ===== 위험/신뢰 요인 ===== */
+    .factors-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 700px) { .factors-grid { grid-template-columns: 1fr; } }
+    .factor-list { list-style: none; }
+    .factor-item {
+      display: flex; align-items: flex-start; gap: 8px;
+      padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 12px;
+    }
+    .factor-item:last-child { border-bottom: none; }
+    .factor-delta {
+      font-size: 11px; font-weight: 700; flex-shrink: 0;
+      min-width: 36px; text-align: right;
+    }
+    .factor-delta.neg { color: var(--red); }
+    .factor-delta.pos { color: var(--green); }
+
+    /* ===== 원본 헤더 ===== */
+    .raw-header {
+      background: var(--bg3); border-radius: var(--radius);
+      padding: 14px; font-family: monospace; font-size: 11px;
+      line-height: 1.8; color: var(--text2); white-space: pre-wrap;
+      word-break: break-all; max-height: 400px; overflow-y: auto;
+    }
+
+    /* ===== 도메인 일관성 알림 ===== */
+    .issue-box {
+      border-radius: var(--radius); padding: 10px 14px;
+      margin-bottom: 8px; font-size: 12px; display: flex; gap: 8px;
+    }
+    .issue-box.critical { background: var(--red-bg);    border: 1px solid var(--red);    color: var(--red); }
+    .issue-box.high     { background: var(--red-bg);    border: 1px solid var(--red);    color: var(--red); }
+    .issue-box.medium   { background: var(--yellow-bg); border: 1px solid var(--yellow); color: var(--yellow); }
+    .issue-box.low      { background: var(--blue-bg);   border: 1px solid var(--blue);   color: var(--blue); }
+    .issue-box.info     { background: var(--bg3);       border: 1px solid var(--border); color: var(--text2); }
+
+    /* ===== 오류 박스 ===== */
+    .error-box {
+      background: var(--red-bg); border: 1px solid var(--red);
+      border-radius: var(--radius); padding: 16px 20px;
+      color: var(--red); margin-bottom: 16px;
+    }
+
+    /* ===== SPF 레코드 파서 표시 ===== */
+    .spf-mech { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .spf-tag {
+      border-radius: 4px; padding: 2px 8px; font-size: 11px;
+      font-family: monospace;
+    }
+    .spf-tag.ip4    { background: #0d2818; color: var(--green);  border: 1px solid var(--green); }
+    .spf-tag.ip6    { background: #0d2818; color: var(--green);  border: 1px solid var(--green); }
+    .spf-tag.include { background: var(--blue-bg); color: var(--blue); border: 1px solid var(--blue); }
+    .spf-tag.mx     { background: var(--bg3); color: var(--purple); border: 1px solid var(--purple); }
+    .spf-tag.a      { background: var(--bg3); color: var(--purple); border: 1px solid var(--purple); }
+    .spf-tag.all    { background: var(--red-bg); color: var(--red); border: 1px solid var(--red); }
+    .spf-tag.all.pass  { background: var(--green-bg); color: var(--green); border-color: var(--green); }
+    .spf-tag.redirect { background: var(--yellow-bg); color: var(--yellow); border: 1px solid var(--yellow); }
+
+    /* ===== 반응형 ===== */
+    @media (max-width: 600px) {
+      .verdict-banner { flex-wrap: wrap; }
+      .auth-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    /* ===== 유틸 ===== */
+    .mt8 { margin-top: 8px; }
+    .mt12 { margin-top: 12px; }
+    .text2 { color: var(--text2); }
+    .text3 { color: var(--text3); }
+    .mono { font-family: monospace; }
+    .empty-msg { color: var(--text3); font-size: 12px; font-style: italic; padding: 10px 0; }
+    .divider { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
+  </style>
+</head>
+<body>
+
+<!-- 헤더 -->
+<header class="site-header">
+  <span class="logo">🔍</span>
+  <div>
+    <h1>발신정보 분석기</h1>
+    <div class="subtitle">이메일 헤더 · EML 파일 분석 | DNS 검증 | SPF / DKIM / DMARC</div>
+  </div>
+</header>
+
+<main class="main">
+
+  <!-- 업로드 패널 -->
+  <div class="upload-panel">
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('file')">📎 EML 파일 업로드</button>
+      <button class="tab-btn" onclick="switchTab('text')">📋 헤더 텍스트 입력</button>
+    </div>
+
+    <!-- 파일 업로드 탭 -->
+    <div id="tab-file" class="tab-content active">
+      <div class="drop-zone" id="dropZone"
+           ondragover="onDragOver(event)"
+           ondragleave="onDragLeave(event)"
+           ondrop="onDrop(event)">
+        <input type="file" id="fileInput" accept=".eml,.txt,.msg" onchange="onFileChange(event)"/>
+        <div class="icon">📧</div>
+        <p>EML 파일을 드래그하거나 클릭하여 업로드</p>
+        <div class="hint">.eml · .txt · .msg 파일 지원 (최대 10MB)</div>
+        <div class="filename" id="selectedFileName"></div>
+      </div>
+    </div>
+
+    <!-- 텍스트 입력 탭 -->
+    <div id="tab-text" class="tab-content">
+      <textarea class="header-input" id="headerText"
+        placeholder="이메일 헤더를 여기에 붙여넣으세요...
+        
+예) From, To, Subject, Received, Authentication-Results, DKIM-Signature 등의 헤더"></textarea>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" id="analyzeBtn" onclick="analyze()">
+        <span>🔍</span> 분석 시작
+      </button>
+      <button class="btn btn-ghost" onclick="reset()">초기화</button>
+      <span class="sample-link" onclick="loadSample()">샘플 데이터 불러오기</span>
+    </div>
+  </div>
+
+  <!-- 로딩 -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+    <div class="loading-steps">
+      <div class="loading-step" id="step1">📨 이메일 헤더 파싱 중...</div>
+      <div class="loading-step" id="step2">🌐 DNS 서버(8.8.8.8) 조회 중...</div>
+      <div class="loading-step" id="step3">🔎 SPF / DKIM / DMARC 검증 중...</div>
+      <div class="loading-step" id="step4">📊 종합 분석 및 판정 중...</div>
+    </div>
+  </div>
+
+  <!-- 결과 -->
+  <div id="results"></div>
+
+</main>
+
+<script>
+// ============================================================
+// 상태 변수
+// ============================================================
+let selectedFile = null;
+let currentTab = 'file';
+let analysisData = null;
+
+// ============================================================
+// 탭 전환
+// ============================================================
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach((b, i) => {
+    b.classList.toggle('active', (i === 0 && tab === 'file') || (i === 1 && tab === 'text'));
+  });
+  document.getElementById('tab-file').classList.toggle('active', tab === 'file');
+  document.getElementById('tab-text').classList.toggle('active', tab === 'text');
+}
+
+// ============================================================
+// 파일 업로드
+// ============================================================
+function onDragOver(e) {
+  e.preventDefault();
+  document.getElementById('dropZone').classList.add('dragging');
+}
+function onDragLeave(e) {
+  document.getElementById('dropZone').classList.remove('dragging');
+}
+function onDrop(e) {
+  e.preventDefault();
+  document.getElementById('dropZone').classList.remove('dragging');
+  const files = e.dataTransfer.files;
+  if (files.length > 0) setFile(files[0]);
+}
+function onFileChange(e) {
+  if (e.target.files.length > 0) setFile(e.target.files[0]);
+}
+function setFile(file) {
+  selectedFile = file;
+  const el = document.getElementById('selectedFileName');
+  el.textContent = `✅ 선택됨: ${file.name} (${(file.size/1024).toFixed(1)} KB)`;
+  el.style.display = 'block';
+}
+
+// ============================================================
+// 샘플 로드
+// ============================================================
+async function loadSample() {
+  try {
+    const res = await fetch('/api/sample');
+    const data = await res.json();
+    switchTab('text');
+    document.getElementById('headerText').value = data.sample;
+  } catch(e) {
+    alert('샘플 로드 실패: ' + e.message);
+  }
+}
+
+// ============================================================
+// 초기화
+// ============================================================
+function reset() {
+  selectedFile = null;
+  document.getElementById('fileInput').value = '';
+  document.getElementById('headerText').value = '';
+  document.getElementById('selectedFileName').style.display = 'none';
+  document.getElementById('selectedFileName').textContent = '';
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('results').innerHTML = '';
+  document.getElementById('loadingOverlay').style.display = 'none';
+}
+
+// ============================================================
+// 분석 시작
+// ============================================================
+async function analyze() {
+  document.getElementById('analyzeBtn').disabled = true;
+  document.getElementById('loadingOverlay').style.display = 'block';
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('results').innerHTML = '';
+  
+  // 로딩 단계 애니메이션
+  const steps = ['step1','step2','step3','step4'];
+  steps.forEach(s => {
+    document.getElementById(s).className = 'loading-step';
+  });
+  let stepIdx = 0;
+  const stepTimer = setInterval(() => {
+    if (stepIdx > 0) document.getElementById(steps[stepIdx-1]).className = 'loading-step done';
+    if (stepIdx < steps.length) {
+      document.getElementById(steps[stepIdx]).className = 'loading-step active';
+      stepIdx++;
+    }
+  }, 800);
+  
+  try {
+    let response;
+    
+    if (currentTab === 'file' && selectedFile) {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      response = await fetch('/api/analyze', { method: 'POST', body: formData });
+    } else if (currentTab === 'text') {
+      const text = document.getElementById('headerText').value.trim();
+      if (!text) { alert('헤더 텍스트를 입력해 주세요.'); return; }
+      const formData = new FormData();
+      formData.append('text', text);
+      response = await fetch('/api/analyze', { method: 'POST', body: formData });
+    } else {
+      alert('분석할 파일이나 텍스트를 입력해 주세요.');
+      return;
+    }
+    
+    clearInterval(stepTimer);
+    steps.forEach(s => document.getElementById(s).className = 'loading-step done');
+    
+    const data = await response.json();
+    analysisData = data;
+    
+    if (!response.ok || data.error) {
+      showError(data.error || '분석 실패');
+      return;
+    }
+    
+    renderResults(data);
+    
+  } catch(e) {
+    clearInterval(stepTimer);
+    showError('서버 연결 오류: ' + e.message);
+  } finally {
+    document.getElementById('analyzeBtn').disabled = false;
+    document.getElementById('loadingOverlay').style.display = 'none';
+  }
+}
+
+// ============================================================
+// 오류 표시
+// ============================================================
+function showError(msg) {
+  const r = document.getElementById('results');
+  r.style.display = 'block';
+  r.innerHTML = `<div class="error-box">⚠️ ${escHtml(msg)}</div>`;
+}
+
+// ============================================================
+// 결과 렌더링
+// ============================================================
+function renderResults(data) {
+  const analysis = data.analysis;
+  const emailData = data.email_data;
+  const dnsResults = data.dns_results;
+  const summary = analysis.summary;
+  const verdict = analysis.verdict;
+  
+  let html = '';
+  
+  // ── 1. 판정 배너 ──
+  const scoreColor = verdict.verdict === 'SAFE' ? 'var(--green)'
+    : verdict.verdict === 'WARNING' ? 'var(--yellow)'
+    : verdict.verdict === 'SUSPICIOUS' ? 'var(--orange)'
+    : 'var(--red)';
+  
+  html += `<div class="verdict-banner ${verdict.verdict}">
+    <div class="verdict-icon">${verdict.icon}</div>
+    <div class="verdict-info">
+      <div class="verdict-label">${verdict.label} — ${verdict.verdict}</div>
+      <div class="verdict-desc">${verdict.description}</div>
+      <div style="margin-top:8px;font-size:12px;color:var(--text2)">
+        분석 소요: ${data.elapsed_seconds}초 &nbsp;|&nbsp;
+        도메인 ${summary.total_domains_analyzed}개 &nbsp;|&nbsp;
+        IP ${summary.total_ips_analyzed}개 &nbsp;|&nbsp;
+        경유 서버 ${summary.hop_count}개
+      </div>
+    </div>
+    <div class="score-box">
+      <div class="score-number">${summary.score}</div>
+      <div class="score-label">신뢰도 점수 / 100</div>
+      <div class="score-bar-wrap">
+        <div class="score-bar" style="width:${summary.score}%;background:${scoreColor}"></div>
+      </div>
+    </div>
+  </div>`;
+  
+  // ── 2. 요약 카드 ──
+  html += `<div class="summary-cards">`;
+  html += summaryCard('발신자 (From)', escHtml(summary.from || '-'));
+  html += summaryCard('발신 도메인', `<span class="mono" style="color:var(--blue)">${escHtml(summary.from_domain || '-')}</span>`);
+  html += summaryCard('제목 (Subject)', escHtml(summary.subject || '-'));
+  html += summaryCard('날짜', escHtml(summary.date || '-'));
+  html += summaryCard('SPF', spfBadge(analysis.authentication.spf.status));
+  html += summaryCard('DKIM', dkimBadge(analysis.authentication.dkim.status));
+  html += summaryCard('DMARC', dmarcBadge(analysis.authentication.dmarc.status));
+  html += summaryCard('경유 서버 수', `<span style="font-size:18px;font-weight:700">${summary.hop_count}</span>`);
+  html += `</div>`;
+  
+  // ── 3. 인증 결과 섹션 ──
+  html += section('🔐 이메일 인증 결과 (SPF / DKIM / DMARC)', renderAuthSection(analysis.authentication), false);
+  
+  // ── 4. 위험/신뢰 요인 ──
+  html += section('⚖️ 분석 요인 및 점수 배분', renderFactorsSection(analysis), false);
+  
+  // ── 5. 도메인 DNS 분석 ──
+  html += section('🌐 도메인별 DNS 조회 결과', renderDomainSection(analysis.domain_analysis, dnsResults), false);
+  
+  // ── 6. 발신 IP 분석 ──
+  html += section('🖥️ 발신 IP 분석', renderIPSection(analysis.ip_analysis, dnsResults), false);
+  
+  // ── 7. 발신 경로 (Received) ──
+  html += section('📬 발신 경로 (Received 헤더)', renderRoutingSection(emailData, analysis.routing), false);
+  
+  // ── 8. 도메인 일관성 ──
+  html += section('🔗 도메인 일관성 검사', renderConsistencySection(analysis.consistency), false);
+  
+  // ── 9. 원본 헤더 ──
+  html += section('📄 원본 이메일 헤더', renderRawHeader(emailData), true);
+  
+  const r = document.getElementById('results');
+  r.style.display = 'block';
+  r.innerHTML = html;
+}
+
+function summaryCard(label, value) {
+  return `<div class="summary-card"><div class="label">${label}</div><div class="value">${value}</div></div>`;
+}
+
+// ============================================================
+// 배지 생성
+// ============================================================
+function spfBadge(status) {
+  const map = {
+    'pass':     ['badge-green', '✅ PASS'],
+    'fail':     ['badge-red',   '❌ FAIL'],
+    'softfail': ['badge-yellow','⚠️ SOFTFAIL'],
+    'neutral':  ['badge-gray',  '❓ NEUTRAL'],
+    'none':     ['badge-gray',  '— 없음'],
+    'dns_only': ['badge-blue',  '📋 DNS만'],
+    'error':    ['badge-orange','⚠️ ERROR'],
+  };
+  const [cls, text] = map[status] || ['badge-gray', `— ${status}`];
+  return `<span class="badge ${cls}">${text}</span>`;
+}
+function dkimBadge(status) {
+  const map = {
+    'pass':          ['badge-green', '✅ PASS'],
+    'fail':          ['badge-red',   '❌ FAIL'],
+    'none':          ['badge-gray',  '— 없음'],
+    'dns_key_exists':['badge-blue',  '📋 키확인'],
+    'no_dns_key':    ['badge-orange','⚠️ 키없음'],
+    'error':         ['badge-orange','⚠️ ERROR'],
+  };
+  const [cls, text] = map[status] || ['badge-gray', `— ${status}`];
+  return `<span class="badge ${cls}">${text}</span>`;
+}
+function dmarcBadge(status) {
+  const map = {
+    'pass':     ['badge-green', '✅ PASS'],
+    'fail':     ['badge-red',   '❌ FAIL'],
+    'none':     ['badge-gray',  '— 없음'],
+    'dns_only': ['badge-blue',  '📋 DNS만'],
+  };
+  const [cls, text] = map[status] || ['badge-gray', `— ${status}`];
+  return `<span class="badge ${cls}">${text}</span>`;
+}
+
+// ============================================================
+// 인증 섹션
+// ============================================================
+function renderAuthSection(auth) {
+  const spf = auth.spf;
+  const dkim = auth.dkim;
+  const dmarc = auth.dmarc;
+  
+  function authClass(status) {
+    if (['pass','dns_key_exists','dns_only'].includes(status)) return 'pass';
+    if (['fail'].includes(status)) return 'fail';
+    if (['softfail','no_dns_key','error'].includes(status)) return 'warning';
+    return 'none';
+  }
+  
+  let html = `<div class="auth-grid">`;
+  
+  // SPF
+  html += `<div class="auth-card ${authClass(spf.status)}">
+    <div class="auth-type">SPF (Sender Policy Framework)</div>
+    <div class="auth-status">${spfBadge(spf.status)}</div>
+    <div class="auth-detail">${escHtml(spf.detail)}</div>`;
+  if (spf.dns_record && spf.dns_record.parsed) {
+    const sp = spf.dns_record.parsed;
+    html += `<hr class="divider">
+    <div style="font-size:11px;color:var(--text3)">SPF 레코드:</div>
+    <div class="spf-mech">`;
+    for (const m of (sp.mechanisms || [])) {
+      const tag = m.type === 'all'
+        ? (sp.all_policy === 'fail' ? 'all' : sp.all_policy === 'pass' ? 'all pass' : 'all')
+        : m.type;
+      html += `<span class="spf-tag ${tag}">${escHtml(m.type)}${m.value ? ':'+escHtml(m.value) : ''}</span>`;
+    }
+    html += `</div>`;
+    html += `<div style="font-size:10px;color:var(--text3);margin-top:6px">
+      정책: ${sp.all_policy || '없음'}</div>`;
+  }
+  if (spf.from_header && spf.from_header.ip) {
+    html += `<div style="font-size:10px;color:var(--text3);margin-top:4px">
+      발신 IP: <span class="mono">${escHtml(spf.from_header.ip)}</span></div>`;
+  }
+  html += `</div>`;
+  
+  // DKIM
+  html += `<div class="auth-card ${authClass(dkim.status)}">
+    <div class="auth-type">DKIM (DomainKeys Identified Mail)</div>
+    <div class="auth-status">${dkimBadge(dkim.status)}</div>
+    <div class="auth-detail">${escHtml(dkim.detail)}</div>`;
+  for (const sig of (dkim.dns_records || [])) {
+    html += `<hr class="divider">
+    <div style="font-size:11px">
+      <span class="mono" style="color:var(--blue)">${escHtml(sig.domain || '')}</span>
+      <span class="text3"> / selector: </span>
+      <span class="mono">${escHtml(sig.selector || '')}</span>
+    </div>
+    <div style="font-size:10px;color:var(--text3);margin-top:4px">
+      DNS 공개키: ${sig.has_dns_key
+        ? `<span style="color:var(--green)">✅ 확인됨</span>`
+        : `<span style="color:var(--red)">❌ 없음</span>`}
+    </div>`;
+  }
+  html += `</div>`;
+  
+  // DMARC
+  html += `<div class="auth-card ${authClass(dmarc.status)}">
+    <div class="auth-type">DMARC</div>
+    <div class="auth-status">${dmarcBadge(dmarc.status)}</div>
+    <div class="auth-detail">${escHtml(dmarc.detail)}</div>`;
+  if (dmarc.dns_record && dmarc.dns_record.parsed) {
+    const dp = dmarc.dns_record.parsed;
+    html += `<hr class="divider">
+    <div style="font-size:11px;color:var(--text3)">DMARC 정책:</div>
+    <div style="font-size:11px;margin-top:4px">
+      <span class="badge ${dp.policy === 'reject' ? 'badge-red' : dp.policy === 'quarantine' ? 'badge-yellow' : 'badge-gray'}">
+        p=${escHtml(dp.policy || 'none')}</span>
+      ${dp.pct !== undefined ? `<span class="badge badge-gray" style="margin-left:4px">pct=${dp.pct}%</span>` : ''}
+    </div>`;
+    if (dp.rua) html += `<div style="font-size:10px;color:var(--text3);margin-top:4px">보고서: ${escHtml(dp.rua)}</div>`;
+  }
+  html += `</div>`;
+  
+  html += `</div>`;
+  return html;
+}
+
+// ============================================================
+// 위험/신뢰 요인 섹션
+// ============================================================
+function renderFactorsSection(analysis) {
+  const score = analysis.score_breakdown;
+  const risks = analysis.risk_factors;
+  const trusts = analysis.trust_factors;
+  
+  const keyLabel = {
+    'spf_pass': 'SPF 인증 통과',
+    'spf_fail': 'SPF 인증 실패',
+    'spf_softfail': 'SPF 소프트 실패',
+    'spf_none': 'SPF 레코드 없음',
+    'dkim_pass': 'DKIM 서명 검증 통과',
+    'dkim_fail': 'DKIM 서명 검증 실패',
+    'dkim_none': 'DKIM 서명 없음',
+    'dmarc_pass': 'DMARC 정책 통과',
+    'dmarc_fail': 'DMARC 정책 실패',
+    'dmarc_none': 'DMARC 레코드 없음',
+    'from_domain_exists': '발신 도메인 DNS 확인됨',
+    'from_domain_no_mx': '발신 도메인 MX 레코드 없음',
+    'from_domain_no_dns': '발신 도메인 DNS 레코드 없음',
+    'ptr_exists': 'PTR(역방향 DNS) 레코드 확인됨',
+    'ptr_no_exists': 'PTR 레코드 없음',
+    'ptr_fcrdns': 'FCrDNS 검증 통과',
+    'reply_to_mismatch': 'Reply-To 도메인 불일치',
+    'return_path_mismatch': 'Return-Path 도메인 불일치',
+    'msgid_domain_mismatch': 'Message-ID 도메인 불일치',
+    'private_ip_sending': '사설 IP에서 발송',
+    'no_received_headers': 'Received 헤더 없음',
+    'suspicious_header': '의심스러운 헤더 발견',
+    'from_display_mismatch': 'From 표시명 불일치',
+  };
+  
+  let html = `<div class="factors-grid">`;
+  
+  // 위험 요인
+  html += `<div>
+    <div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:8px">
+      🚨 위험 요인 (${risks.length}개)</div>
+    <ul class="factor-list">`;
+  if (risks.length === 0) {
+    html += `<li class="empty-msg">위험 요인 없음</li>`;
+  } else {
+    for (const r of risks) {
+      html += `<li class="factor-item">
+        <span class="factor-delta neg">${r.delta}</span>
+        <span>${keyLabel[r.key] || escHtml(r.key)}</span>
+      </li>`;
+    }
+  }
+  html += `</ul></div>`;
+  
+  // 신뢰 요인
+  html += `<div>
+    <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:8px">
+      ✅ 신뢰 요인 (${trusts.length}개)</div>
+    <ul class="factor-list">`;
+  if (trusts.length === 0) {
+    html += `<li class="empty-msg">신뢰 요인 없음</li>`;
+  } else {
+    for (const t of trusts) {
+      html += `<li class="factor-item">
+        <span class="factor-delta pos">+${t.delta}</span>
+        <span>${keyLabel[t.key] || escHtml(t.key)}</span>
+      </li>`;
+    }
+  }
+  html += `</ul></div>`;
+  
+  html += `</div>`;
+  
+  // 점수 분해
+  html += `<div style="margin-top:14px;padding:12px;background:var(--bg3);border-radius:var(--radius);font-size:12px">
+    <span style="color:var(--text2)">기준 점수: <strong>50</strong></span>
+    ${score.bonuses.length ? ` &nbsp;|&nbsp; <span style="color:var(--green)">가점: +${score.bonuses.reduce((a,b)=>a+b.delta,0)}</span>` : ''}
+    ${score.deductions.length ? ` &nbsp;|&nbsp; <span style="color:var(--red)">감점: ${score.deductions.reduce((a,b)=>a+b.delta,0)}</span>` : ''}
+    &nbsp;|&nbsp; <strong>최종: ${score.final}점</strong>
+  </div>`;
+  
+  return html;
+}
+
+// ============================================================
+// 도메인 DNS 분석 섹션
+// ============================================================
+function renderDomainSection(domainAnalysis, dnsResults) {
+  const domains = Object.values(domainAnalysis);
+  if (!domains.length) return `<div class="empty-msg">분석된 도메인 없음</div>`;
+  
+  let html = `<table class="domain-table">
+    <thead><tr>
+      <th>도메인</th><th>역할</th><th>A</th><th>MX</th><th>SPF</th><th>DMARC</th>
+      <th>상태</th><th>비고</th>
+    </tr></thead><tbody>`;
+  
+  for (const da of domains) {
+    const existIcon = da.dns_exists
+      ? `<span style="color:var(--green)">✅</span>`
+      : `<span style="color:var(--red)">❌</span>`;
+    const checkMark = v => v
+      ? `<span class="check-icon" style="color:var(--green)">✅</span>`
+      : `<span class="check-icon" style="color:var(--text3)">—</span>`;
+    
+    // 이슈 중 가장 심각한 severity
+    const maxSev = da.issues.length === 0 ? 'ok'
+      : da.issues.some(i=>i.severity==='critical') ? 'critical'
+      : da.issues.some(i=>i.severity==='high') ? 'high'
+      : da.issues.some(i=>i.severity==='medium') ? 'medium' : 'low';
+    
+    const statusBadge = maxSev === 'ok' ? `<span class="badge badge-green">정상</span>`
+      : maxSev === 'critical' ? `<span class="badge badge-red">위험</span>`
+      : maxSev === 'high' ? `<span class="badge badge-red">불량</span>`
+      : maxSev === 'medium' ? `<span class="badge badge-yellow">주의</span>`
+      : `<span class="badge badge-blue">정보</span>`;
+    
+    // A 레코드 값
+    const aRecs = da.a_records.length ? da.a_records.slice(0,2).join(', ') : '';
+    // MX 레코드 값
+    const mxRecs = da.mx_records.length
+      ? da.mx_records.slice(0,2).map(m => typeof m === 'object' ? m.exchange : m).join(', ')
+      : '';
+    
+    // 이슈 표시
+    const issueHtml = da.issues.map(i =>
+      `<div class="issue-box ${i.severity}" style="margin-top:4px">
+        <span>${i.message}</span></div>`
+    ).join('');
+    
+    html += `<tr>
+      <td>
+        <div class="domain-name">${escHtml(da.domain)}</div>
+        ${da.a_records.length ? `<div class="record-list">${da.a_records.slice(0,3).map(ip=>`<span class="record-tag">${escHtml(ip)}</span>`).join('')}</div>` : ''}
+      </td>
+      <td>${da.role.map(r=>`<div style="font-size:11px;color:var(--text2)">${escHtml(r)}</div>`).join('')}</td>
+      <td>${da.has_a ? `<span style="color:var(--green)">✅</span><div style="font-size:10px;color:var(--text3)">${escHtml(aRecs)}</div>` : `<span style="color:var(--text3)">—</span>`}</td>
+      <td>${da.has_mx ? `<span style="color:var(--green)">✅</span><div style="font-size:10px;color:var(--text3)">${escHtml(mxRecs)}</div>` : `<span style="color:var(--text3)">—</span>`}</td>
+      <td>${da.has_spf
+        ? `<span style="color:var(--green)">✅</span>
+           <div style="font-size:10px;color:var(--text3)">${da.spf_record ? escHtml((da.spf_record.parsed||{}).all_policy||'') : ''}</div>`
+        : `<span style="color:var(--red)">❌</span>`}</td>
+      <td>${da.has_dmarc
+        ? `<span style="color:var(--green)">✅</span>
+           <div style="font-size:10px;color:var(--text3)">${da.dmarc_record ? escHtml((da.dmarc_record.parsed||{}).policy||'') : ''}</div>`
+        : `<span style="color:var(--text3)">—</span>`}</td>
+      <td>${statusBadge}</td>
+      <td>${issueHtml}
+        ${da.ns_records && da.ns_records.length ? `<div style="font-size:10px;color:var(--text3);margin-top:4px">NS: ${escHtml(da.ns_records.slice(0,2).join(', '))}</div>` : ''}
+      </td>
+    </tr>`;
+  }
+  
+  html += `</tbody></table>`;
+  return html;
+}
+
+// ============================================================
+// IP 분석 섹션
+// ============================================================
+function renderIPSection(ipAnalysis, dnsResults) {
+  const ips = Object.values(ipAnalysis);
+  if (!ips.length) return `<div class="empty-msg">분석된 IP 없음</div>`;
+  
+  let html = '';
+  for (const ip of ips) {
+    const typeLabel = ip.is_private
+      ? `<span class="badge badge-orange">사설 IP</span>`
+      : `<span class="badge badge-blue">공인 IP</span>`;
+    
+    const ptrStatus = ip.has_ptr
+      ? `<span style="color:var(--green)">✅ ${escHtml(ip.ptr_hostname || '')}</span>`
+      : ip.is_private ? `<span style="color:var(--text3)">— (사설 IP)</span>`
+      : `<span style="color:var(--red)">❌ PTR 없음</span>`;
+    
+    const fcrdns = ip.ptr_fcrdns
+      ? `<span style="color:var(--green)">✅ FCrDNS 일치</span>`
+      : ip.has_ptr ? `<span style="color:var(--yellow)">⚠️ FCrDNS 불일치</span>` : '';
+    
+    const spfStatus = ip.is_in_spf
+      ? `<span style="color:var(--green)">✅ SPF에 포함됨</span>`
+      : `<span style="color:var(--text3)">— 미확인</span>`;
+    
+    html += `<div class="ip-card">
+      <div class="ip-header">
+        <span class="ip-addr">${escHtml(ip.ip)}</span>
+        ${typeLabel}
+        ${(ip.role||[]).map(r=>`<span class="badge badge-gray">${escHtml(r)}</span>`).join('')}
+      </div>
+      <div class="ip-details">
+        <div class="ip-detail-item"><strong>PTR 레코드:</strong> ${ptrStatus}</div>
+        <div class="ip-detail-item"><strong>FCrDNS 검증:</strong> ${fcrdns || '— 해당없음'}</div>
+        <div class="ip-detail-item"><strong>SPF 포함 여부:</strong> ${spfStatus}</div>
+        ${ip.is_private ? `<div class="ip-detail-item" style="color:var(--orange)">⚠️ 사설/내부 IP</div>` : ''}
+      </div>
+      ${ip.notes && ip.notes.length ? `<div style="margin-top:8px">${ip.notes.map(n=>`<div class="issue-box info">${escHtml(n)}</div>`).join('')}</div>` : ''}
+      ${ip.issues && ip.issues.length ? `<div style="margin-top:4px">${ip.issues.map(i=>`<div class="issue-box ${i.severity}">${escHtml(i.message)}</div>`).join('')}</div>` : ''}
+    </div>`;
+  }
+  return html;
+}
+
+// ============================================================
+// 발신 경로 섹션
+// ============================================================
+function renderRoutingSection(emailData, routing) {
+  const hops = routing.hops || [];
+  if (!hops.length) {
+    return `<div class="empty-msg">Received 헤더 없음 — 발신 경로 추적 불가</div>`;
+  }
+  
+  let html = `<div style="font-size:12px;color:var(--text2);margin-bottom:12px">
+    총 ${hops.length}개 서버를 경유 (아래에서 위로: 발신 → 수신)
+  </div><div class="hop-list">`;
+  
+  // 역순으로 표시 (발신 → 수신)
+  const reversed = [...hops].reverse();
+  
+  for (let i = 0; i < reversed.length; i++) {
+    const hop = reversed[i];
+    const isFirst = (i === 0);
+    const isLast  = (i === reversed.length - 1);
+    const dotClass = isFirst ? 'hop-dot first' : isLast ? 'hop-dot last' : 'hop-dot';
+    const label = isFirst ? '🟢 최초 발신 서버' : isLast ? '🔵 최종 수신 서버' : `📡 경유 서버 #${i}`;
+    
+    html += `<div class="hop-item">
+      <div class="hop-line">
+        <div class="${dotClass}"></div>
+        ${!isLast ? '<div class="hop-connector"></div>' : ''}
+      </div>
+      <div class="hop-content">
+        <div class="hop-label">${label}</div>
+        <div class="hop-from">${escHtml(hop.from_host || '알 수 없음')}</div>
+        <div class="hop-meta">
+          ${hop.by_host ? `→ <strong>by</strong> ${escHtml(hop.by_host)}` : ''}
+          ${hop.timestamp ? ` &nbsp;|&nbsp; 🕐 ${escHtml(hop.timestamp)}` : ''}
+        </div>
+        ${hop.ips && hop.ips.length ? `<div class="hop-ips">${hop.ips.map(ip=>`<span class="hop-ip-tag">${escHtml(ip)}</span>`).join('')}</div>` : ''}
+      </div>
+    </div>`;
+  }
+  
+  html += `</div>`;
+  return html;
+}
+
+// ============================================================
+// 일관성 검사 섹션
+// ============================================================
+function renderConsistencySection(consistency) {
+  let html = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-bottom:12px">`;
+  
+  function infoRow(label, value, highlight) {
+    return `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:10px 12px">
+      <div style="font-size:10px;color:var(--text3)">${label}</div>
+      <div style="font-size:13px;font-family:monospace;color:${highlight||'var(--text)'};margin-top:2px">${escHtml(value || '—')}</div>
+    </div>`;
+  }
+  
+  html += infoRow('From 도메인', consistency.from_domain, 'var(--blue)');
+  html += infoRow('Reply-To 도메인', consistency.reply_to_domain,
+    (consistency.reply_to_domain && consistency.reply_to_domain !== consistency.from_domain) ? 'var(--red)' : 'var(--text)');
+  html += infoRow('Return-Path 도메인', consistency.return_path_domain,
+    (consistency.return_path_domain && consistency.return_path_domain !== consistency.from_domain) ? 'var(--yellow)' : 'var(--text)');
+  html += infoRow('Message-ID 도메인', consistency.message_id_domain);
+  html += `</div>`;
+  
+  if (consistency.issues && consistency.issues.length) {
+    for (const issue of consistency.issues) {
+      html += `<div class="issue-box ${issue.severity}">
+        ⚠️ ${escHtml(issue.message)}</div>`;
+    }
+  } else {
+    html += `<div class="issue-box info">✅ 도메인 일관성 이상 없음</div>`;
+  }
+  
+  // DKIM 도메인 목록
+  if (consistency.dkim_domains && consistency.dkim_domains.length) {
+    html += `<div style="margin-top:10px;font-size:12px;color:var(--text2)">
+      DKIM 서명 도메인: ${consistency.dkim_domains.map(d=>`<span class="mono" style="color:var(--blue)">${escHtml(d)}</span>`).join(', ')}
+    </div>`;
+  }
+  
+  return html;
+}
+
+// ============================================================
+// 원본 헤더 섹션
+// ============================================================
+function renderRawHeader(emailData) {
+  const raw = emailData.raw_headers || '';
+  const lines = raw.split('\n').slice(0, 80); // 첫 80줄만
+  const highlighted = lines.map(line => {
+    if (line.match(/^From:/i))   return `<span style="color:#79c0ff">${escHtml(line)}</span>`;
+    if (line.match(/^To:/i))     return `<span style="color:#79c0ff">${escHtml(line)}</span>`;
+    if (line.match(/^Subject:/i)) return `<span style="color:#d2a8ff">${escHtml(line)}</span>`;
+    if (line.match(/^Received:/i)) return `<span style="color:#3fb950">${escHtml(line)}</span>`;
+    if (line.match(/^Authentication-Results:/i)) return `<span style="color:#e3b341">${escHtml(line)}</span>`;
+    if (line.match(/^DKIM-Signature:/i)) return `<span style="color:#e3b341">${escHtml(line)}</span>`;
+    if (line.match(/^Received-SPF:/i)) return `<span style="color:#e3b341">${escHtml(line)}</span>`;
+    if (line.match(/^Return-Path:/i)) return `<span style="color:#ffa657">${escHtml(line)}</span>`;
+    if (line.match(/^Reply-To:/i)) return `<span style="color:#ffa657">${escHtml(line)}</span>`;
+    return `<span style="color:#8b949e">${escHtml(line)}</span>`;
+  }).join('\n');
+  
+  return `<pre class="raw-header">${highlighted}</pre>
+    <div style="font-size:11px;color:var(--text3);margin-top:6px">
+      색상: <span style="color:#79c0ff">■</span> From/To
+      <span style="color:#3fb950">■</span> Received
+      <span style="color:#e3b341">■</span> 인증헤더
+      <span style="color:#ffa657">■</span> Return-Path/Reply-To
+      <span style="color:#d2a8ff">■</span> Subject
+    </div>`;
+}
+
+// ============================================================
+// 섹션 컴포넌트
+// ============================================================
+function section(title, content, collapsed) {
+  const id = 'sec_' + Math.random().toString(36).substr(2,6);
+  return `<div class="section">
+    <div class="section-header ${collapsed?'collapsed':''}" onclick="toggleSection('${id}')">
+      <h3>${title}</h3>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="section-body ${collapsed?'collapsed':''}" id="${id}">${content}</div>
+  </div>`;
+}
+
+function toggleSection(id) {
+  const body = document.getElementById(id);
+  const header = body.previousElementSibling;
+  body.classList.toggle('collapsed');
+  header.classList.toggle('collapsed');
+}
+
+// ============================================================
+// 유틸
+// ============================================================
+function escHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
