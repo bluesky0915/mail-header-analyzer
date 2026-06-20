@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>발신정보 분석기</title>
+  <title>사칭메일 분석서비스</title>
   <style>
     /* ===== CSS 변수 ===== */
     :root {
@@ -53,6 +53,14 @@
     .site-header .logo { font-size: 24px; }
     .header-title-wrap h1 { font-size: 18px; font-weight: 700; }
     .header-title-wrap .sub { font-size: 11px; color: var(--text3); margin-top: 1px; }
+    /* 리얼시큐 로고 */
+    .realsecu-logo {
+      height: 36px;
+      width: auto;
+      display: block;
+      object-fit: contain;
+      /* 흰 배경 로고에 다크모드 대응: 로고 자체가 흰 글씨+컬러이므로 그대로 표시 */
+    }
     .header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
     .user-chip {
       display: none;
@@ -148,7 +156,18 @@
       background: linear-gradient(135deg, #0d1f3c 0%, #1a1f35 100%);
       border-bottom: 1px solid var(--border);
       padding: 28px 32px 24px;
-      display: flex; align-items: flex-start; gap: 18px;
+      display: flex; align-items: center; gap: 18px;
+    }
+    /* 로고 래퍼: 검정 배경 로고를 어두운 헤더에서도 명확히 표시 */
+    .logo-wrapper {
+      margin-left: auto;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      background: #000;
+      border-radius: 8px;
+      padding: 6px 14px;
+      border: 1px solid rgba(255,255,255,0.08);
     }
     .reg-card-icon {
       width: 52px; height: 52px;
@@ -648,7 +667,7 @@
 <header class="site-header">
   <span class="logo">🔍</span>
   <div class="header-title-wrap">
-    <h1>발신정보 분석기</h1>
+    <h1>사칭메일 분석서비스</h1>
     <div class="sub">이메일 헤더 · EML 파일 발신 검증 시스템</div>
   </div>
   <div class="header-right">
@@ -681,12 +700,15 @@
       <!-- 카드 헤더 -->
       <div class="reg-card-header">
         <div class="reg-card-icon">👤</div>
-        <div>
+        <div style="flex:1;">
           <h2>사용자 정보 입력</h2>
           <p>
-            발신정보 분석기를 이용하시기 전에 기본 정보를 입력해 주세요.<br>
+            사칭메일 분석서비스를 이용하시기 전에 기본 정보를 입력해 주세요.<br>
             입력하신 정보는 분석 리포트 생성 및 서비스 품질 향상에 활용됩니다.
           </p>
+        </div>
+        <div class="logo-wrapper">
+          <img src="/realsecu-logo.png" alt="RealSecu Security System" class="realsecu-logo" />
         </div>
       </div>
 
@@ -768,7 +790,7 @@
                     서비스 이용약관 동의
                     <span class="badge-req">[필수]</span>
                   </div>
-                  <div class="check-desc">발신정보 분석기 서비스 이용을 위한 약관에 동의합니다.</div>
+                  <div class="check-desc">사칭메일 분석서비스 이용을 위한 약관에 동의합니다.</div>
                 </div>
                 <span class="view-detail" onclick="openModal('terms'); event.stopPropagation();">전문보기</span>
               </div>
@@ -935,7 +957,7 @@ const MODAL_CONTENTS = {
     title: '서비스 이용약관',
     body: `
       <h4>제1조 (목적)</h4>
-      본 약관은 발신정보 분석기(이하 "서비스") 이용에 관한 조건 및 절차,
+      본 약관은 사칭메일 분석서비스(이하 "서비스") 이용에 관한 조건 및 절차,
       이용자와 서비스 제공자의 권리·의무·책임사항을 규정함을 목적으로 합니다.
 
       <h4>제2조 (서비스의 내용)</h4>
