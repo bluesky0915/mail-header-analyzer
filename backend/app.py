@@ -4,8 +4,10 @@
 
 import os
 import json
+import csv
 import time
 import traceback
+from datetime import datetime
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 
@@ -18,10 +20,49 @@ CORS(app)
 
 UPLOAD_MAX_SIZE = 10 * 1024 * 1024  # 10MB
 
+# 사용자 정보 저장 경로
+USER_LOG_PATH = os.path.join(os.path.dirname(__file__), '..', 'data', 'users.csv')
+os.makedirs(os.path.dirname(USER_LOG_PATH), exist_ok=True)
+
+
+def save_user_info(user_data: dict):
+    """사용자 정보를 CSV에 저장"""
+    fieldnames = ['timestamp', 'name', 'company', 'email', 'phone', 'agree_marketing', 'ip']
+    file_exists = os.path.isfile(USER_LOG_PATH)
+    try:
+        with open(USER_LOG_PATH, 'a', newline='', encoding='utf-8') as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            if not file_exists:
+                writer.writeheader()
+            writer.writerow({
+                'timestamp':       datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'name':            user_data.get('name', ''),
+                'company':         user_data.get('company', ''),
+                'email':           user_data.get('email', ''),
+                'phone':           user_data.get('phone', ''),
+                'agree_marketing': str(user_data.get('agreeMarketing', False)),
+                'ip':              request.remote_addr or ''
+            })
+    except Exception as e:
+        print(f"[사용자 저장 오류] {e}")
+
 
 @app.route('/')
 def index():
     return send_from_directory('../frontend/public', 'index.html')
+
+
+@app.route('/api/user', methods=['POST'])
+def save_user():
+    """사용자 정보 저장 API"""
+    try:
+        data = request.get_json(force=True) or {}
+        if not data.get('name') or not data.get('email'):
+            return jsonify({'error': '필수 항목 누락'}), 400
+        save_user_info(data)
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/analyze', methods=['POST'])

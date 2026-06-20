@@ -5,29 +5,30 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>발신정보 분석기</title>
   <style>
-    /* ===== 기본 리셋 & 변수 ===== */
+    /* ===== CSS 변수 ===== */
     :root {
-      --bg: #0d1117;
-      --bg2: #161b22;
-      --bg3: #21262d;
-      --border: #30363d;
-      --text: #e6edf3;
-      --text2: #8b949e;
-      --text3: #6e7681;
-      --green: #3fb950;
-      --green-bg: #0d2818;
-      --yellow: #d29922;
+      --bg:        #0d1117;
+      --bg2:       #161b22;
+      --bg3:       #21262d;
+      --border:    #30363d;
+      --text:      #e6edf3;
+      --text2:     #8b949e;
+      --text3:     #6e7681;
+      --green:     #3fb950;
+      --green-bg:  #0d2818;
+      --yellow:    #d29922;
       --yellow-bg: #2d2100;
-      --orange: #e3632a;
+      --orange:    #e3632a;
       --orange-bg: #2d1500;
-      --red: #f85149;
-      --red-bg: #2d0000;
-      --blue: #58a6ff;
-      --blue-bg: #0d1f3c;
-      --purple: #bc8cff;
-      --radius: 8px;
+      --red:       #f85149;
+      --red-bg:    #2d0000;
+      --blue:      #58a6ff;
+      --blue-bg:   #0d1f3c;
+      --purple:    #bc8cff;
+      --radius:    8px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
     body {
       background: var(--bg);
       color: var(--text);
@@ -36,51 +37,366 @@
       line-height: 1.6;
     }
 
-    /* ===== 헤더 ===== */
+    /* ===== 공통 헤더 ===== */
     .site-header {
       background: var(--bg2);
       border-bottom: 1px solid var(--border);
-      padding: 16px 24px;
+      padding: 0 28px;
+      height: 58px;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 14px;
       position: sticky;
       top: 0;
-      z-index: 100;
+      z-index: 200;
     }
-    .site-header .logo { font-size: 22px; }
-    .site-header h1 { font-size: 18px; font-weight: 700; color: var(--text); }
-    .site-header .subtitle { font-size: 12px; color: var(--text2); margin-top: 2px; }
+    .site-header .logo { font-size: 24px; }
+    .header-title-wrap h1 { font-size: 18px; font-weight: 700; }
+    .header-title-wrap .sub { font-size: 11px; color: var(--text3); margin-top: 1px; }
+    .header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+    .user-chip {
+      display: none;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 4px 14px 4px 10px;
+      font-size: 12px;
+      color: var(--text2);
+      gap: 6px;
+      align-items: center;
+    }
+    .user-chip .avatar {
+      width: 22px; height: 22px;
+      background: linear-gradient(135deg, var(--blue), var(--purple));
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: #fff;
+      flex-shrink: 0;
+    }
 
-    /* ===== 메인 레이아웃 ===== */
-    .main { max-width: 1280px; margin: 0 auto; padding: 24px 20px; }
+    /* ===== 스텝 진행 표시 ===== */
+    .step-bar {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 0 28px;
+      display: flex;
+      align-items: center;
+      height: 52px;
+      gap: 0;
+    }
+    .step-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 20px 0 0;
+      position: relative;
+    }
+    .step-item:not(:last-child)::after {
+      content: '›';
+      color: var(--text3);
+      font-size: 18px;
+      margin-left: 4px;
+    }
+    .step-num {
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700;
+      border: 2px solid var(--border);
+      color: var(--text3);
+      flex-shrink: 0;
+      transition: all 0.3s;
+    }
+    .step-label { font-size: 13px; color: var(--text3); transition: color 0.3s; }
+    .step-item.active .step-num  { background: var(--blue); border-color: var(--blue); color: #fff; }
+    .step-item.active .step-label { color: var(--text); font-weight: 600; }
+    .step-item.done .step-num   { background: var(--green); border-color: var(--green); color: #fff; }
+    .step-item.done .step-label { color: var(--green); }
 
-    /* ===== 업로드 패널 ===== */
+    /* ===== 페이지 공통 ===== */
+    .page { display: none; }
+    .page.active { display: block; }
+    .main { max-width: 860px; margin: 0 auto; padding: 36px 20px 60px; }
+
+    /* ===== 버튼 ===== */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+      border: none; border-radius: var(--radius);
+      padding: 11px 28px; font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: all 0.18s;
+      text-decoration: none;
+    }
+    .btn-primary { background: var(--blue); color: #fff; }
+    .btn-primary:hover { background: #79b8ff; }
+    .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
+    .btn-ghost {
+      background: var(--bg3); color: var(--text2);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { background: var(--border); color: var(--text); }
+    .btn-danger { background: var(--red-bg); color: var(--red); border: 1px solid var(--red); }
+    .btn-danger:hover { background: var(--red); color: #fff; }
+
+    /* ===== [1단계] 사용자 정보 입력 ===== */
+    .reg-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .reg-card-header {
+      background: linear-gradient(135deg, #0d1f3c 0%, #1a1f35 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 28px 32px 24px;
+      display: flex; align-items: flex-start; gap: 18px;
+    }
+    .reg-card-icon {
+      width: 52px; height: 52px;
+      background: linear-gradient(135deg, var(--blue), var(--purple));
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px; flex-shrink: 0;
+    }
+    .reg-card-header h2 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+    .reg-card-header p  { font-size: 13px; color: var(--text2); line-height: 1.5; }
+
+    .reg-form { padding: 32px; }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+    .form-row.full { grid-template-columns: 1fr; }
+    @media(max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
+
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group label {
+      font-size: 12px; font-weight: 600; color: var(--text2);
+      display: flex; align-items: center; gap: 4px;
+    }
+    .form-group label .required { color: var(--red); font-size: 14px; }
+    .form-group label .optional {
+      font-size: 10px; color: var(--text3); font-weight: 400;
+      background: var(--bg3); border-radius: 4px; padding: 1px 6px;
+    }
+
+    .form-input {
+      background: var(--bg3);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 14px;
+      padding: 10px 14px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      width: 100%;
+    }
+    .form-input::placeholder { color: var(--text3); }
+    .form-input:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(88,166,255,0.12);
+    }
+    .form-input.error { border-color: var(--red); }
+    .form-input.error:focus { box-shadow: 0 0 0 3px rgba(248,81,73,0.15); }
+    .form-input.valid { border-color: var(--green); }
+
+    .field-error {
+      font-size: 11px; color: var(--red);
+      display: none; align-items: center; gap: 4px;
+    }
+    .field-error.show { display: flex; }
+
+    /* 전화번호 입력 */
+    .phone-wrap { position: relative; }
+    .phone-wrap .phone-flag {
+      position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+      font-size: 16px; pointer-events: none;
+    }
+    .phone-wrap .form-input { padding-left: 38px; }
+
+    /* ===== 개인정보 동의 섹션 ===== */
+    .privacy-section {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin: 24px 0 0;
+      overflow: hidden;
+    }
+    .privacy-header {
+      padding: 14px 18px;
+      display: flex; align-items: center; justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+    }
+    .privacy-header:hover { background: rgba(88,166,255,0.05); }
+    .privacy-header-left { display: flex; align-items: center; gap: 10px; }
+    .privacy-header-left .icon { font-size: 18px; }
+    .privacy-header-left strong { font-size: 14px; }
+    .privacy-header-left span  { font-size: 11px; color: var(--red); }
+    .privacy-toggle-icon { color: var(--text3); transition: transform 0.25s; font-size: 12px; }
+    .privacy-toggle-icon.open { transform: rotate(180deg); }
+
+    .privacy-body {
+      border-top: 1px solid var(--border);
+      padding: 18px;
+      display: none;
+    }
+    .privacy-body.show { display: block; }
+
+    .privacy-scroll {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px 16px;
+      max-height: 200px;
+      overflow-y: auto;
+      font-size: 11px;
+      color: var(--text2);
+      line-height: 1.8;
+      margin-bottom: 14px;
+    }
+    .privacy-scroll h4 { color: var(--text); font-size: 12px; margin: 10px 0 4px; }
+    .privacy-scroll h4:first-child { margin-top: 0; }
+    .privacy-scroll table { width: 100%; border-collapse: collapse; margin: 6px 0; }
+    .privacy-scroll th, .privacy-scroll td {
+      border: 1px solid var(--border);
+      padding: 5px 8px;
+      font-size: 10px;
+    }
+    .privacy-scroll th { background: var(--bg3); color: var(--text); font-weight: 600; }
+
+    /* 체크박스 그룹 */
+    .check-group { display: flex; flex-direction: column; gap: 10px; }
+    .check-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px 14px;
+      background: var(--bg2);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: border-color 0.18s;
+      user-select: none;
+    }
+    .check-item:hover { border-color: var(--blue); }
+    .check-item.checked { border-color: var(--green); background: var(--green-bg); }
+    .check-item.required-check.checked { border-color: var(--green); }
+    .check-item input[type="checkbox"] { display: none; }
+    .check-box {
+      width: 18px; height: 18px;
+      border: 2px solid var(--border);
+      border-radius: 4px;
+      flex-shrink: 0;
+      margin-top: 1px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.18s;
+      background: var(--bg3);
+    }
+    .check-item.checked .check-box {
+      background: var(--green);
+      border-color: var(--green);
+    }
+    .check-box .check-mark { display: none; color: #fff; font-size: 11px; font-weight: 700; }
+    .check-item.checked .check-mark { display: block; }
+    .check-text { flex: 1; }
+    .check-text .check-title {
+      font-size: 13px; font-weight: 600;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .check-text .check-desc { font-size: 11px; color: var(--text2); margin-top: 2px; }
+    .badge-req { font-size: 10px; color: var(--red); font-weight: 700; }
+    .badge-opt { font-size: 10px; color: var(--text3); }
+    .view-detail {
+      font-size: 11px; color: var(--blue); cursor: pointer;
+      text-decoration: underline; flex-shrink: 0; margin-top: 2px;
+    }
+
+    /* 전체 동의 버튼 */
+    .agree-all-btn {
+      width: 100%;
+      background: var(--bg2);
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 12px;
+      color: var(--text2);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.18s;
+      margin-bottom: 12px;
+    }
+    .agree-all-btn:hover { border-color: var(--green); color: var(--green); }
+    .agree-all-btn.all-checked {
+      border-color: var(--green);
+      color: var(--green);
+      background: var(--green-bg);
+    }
+
+    /* 폼 하단 버튼 영역 */
+    .form-footer {
+      margin-top: 28px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .form-footer-left { font-size: 12px; color: var(--text3); }
+
+    /* ===== [2단계] 분석 페이지 ===== */
+    .user-info-bar {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 20px;
+      margin-bottom: 22px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .user-info-bar .uib-avatar {
+      width: 38px; height: 38px;
+      background: linear-gradient(135deg, var(--blue), var(--purple));
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; font-weight: 700; color: #fff;
+      flex-shrink: 0;
+    }
+    .user-info-bar .uib-info { flex: 1; }
+    .user-info-bar .uib-name { font-size: 14px; font-weight: 700; }
+    .user-info-bar .uib-meta { font-size: 12px; color: var(--text2); margin-top: 1px; }
+    .user-info-bar .uib-badge {
+      background: var(--green-bg); border: 1px solid var(--green);
+      border-radius: 12px; padding: 3px 12px;
+      font-size: 11px; color: var(--green); font-weight: 600;
+    }
+
+    /* 업로드 패널 */
     .upload-panel {
       background: var(--bg2);
       border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 24px;
-      margin-bottom: 24px;
+      margin-bottom: 22px;
     }
-    .upload-panel h2 { font-size: 15px; margin-bottom: 16px; color: var(--text2); }
-    .tabs { display: flex; gap: 0; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
+    .tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 18px; }
     .tab-btn {
       background: none; border: none; color: var(--text2);
-      padding: 8px 20px; cursor: pointer; font-size: 13px;
+      padding: 8px 22px; cursor: pointer; font-size: 13px; font-weight: 500;
       border-bottom: 2px solid transparent; margin-bottom: -1px;
-      transition: all 0.2s;
+      transition: all 0.18s;
     }
     .tab-btn.active { color: var(--blue); border-bottom-color: var(--blue); }
-    .tab-btn:hover { color: var(--text); }
+    .tab-btn:hover:not(.active) { color: var(--text); }
     .tab-content { display: none; }
     .tab-content.active { display: block; }
 
-    /* 드래그앤드롭 영역 */
     .drop-zone {
       border: 2px dashed var(--border);
       border-radius: var(--radius);
-      padding: 40px;
+      padding: 44px 24px;
       text-align: center;
       cursor: pointer;
       transition: all 0.2s;
@@ -88,137 +404,107 @@
     }
     .drop-zone:hover, .drop-zone.dragging {
       border-color: var(--blue);
-      background: var(--blue-bg);
+      background: rgba(88,166,255,0.04);
     }
     .drop-zone input[type="file"] {
       position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
     }
-    .drop-zone .icon { font-size: 36px; margin-bottom: 8px; }
-    .drop-zone p { color: var(--text2); font-size: 13px; }
-    .drop-zone .hint { font-size: 11px; color: var(--text3); margin-top: 4px; }
-    .drop-zone .filename {
-      display: none; color: var(--green); font-size: 13px;
-      margin-top: 8px; font-weight: 600;
+    .drop-zone .dz-icon { font-size: 40px; margin-bottom: 10px; }
+    .drop-zone .dz-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+    .drop-zone .dz-hint  { font-size: 12px; color: var(--text3); }
+    .drop-zone .dz-file-info {
+      display: none;
+      margin-top: 14px;
+      background: var(--bg3);
+      border: 1px solid var(--green);
+      border-radius: 6px;
+      padding: 10px 16px;
+      font-size: 13px;
+      color: var(--green);
+      font-weight: 600;
     }
 
-    /* 텍스트 입력 */
     textarea.header-input {
       width: 100%;
-      min-height: 200px;
+      min-height: 210px;
       background: var(--bg3);
-      border: 1px solid var(--border);
+      border: 1.5px solid var(--border);
       border-radius: var(--radius);
       color: var(--text);
       font-family: 'Consolas', 'Courier New', monospace;
       font-size: 12px;
-      padding: 12px;
+      padding: 14px;
       resize: vertical;
       outline: none;
       transition: border-color 0.2s;
     }
     textarea.header-input:focus { border-color: var(--blue); }
 
-    .btn-row { display: flex; gap: 10px; margin-top: 16px; align-items: center; }
-    .btn {
-      background: var(--blue); color: #fff; border: none;
-      border-radius: var(--radius); padding: 10px 24px;
-      font-size: 14px; font-weight: 600; cursor: pointer;
-      transition: opacity 0.2s; display: flex; align-items: center; gap: 6px;
+    .btn-row {
+      display: flex; gap: 10px; margin-top: 18px; align-items: center; flex-wrap: wrap;
     }
-    .btn:hover { opacity: 0.85; }
-    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    .btn-ghost {
-      background: var(--bg3); color: var(--text2); border: 1px solid var(--border);
-    }
-    .btn-ghost:hover { background: var(--border); color: var(--text); }
     .sample-link { color: var(--blue); font-size: 12px; cursor: pointer; text-decoration: underline; }
 
-    /* ===== 로딩 스피너 ===== */
+    /* ===== 로딩 ===== */
     .loading-overlay {
       display: none;
-      text-align: center;
-      padding: 60px;
-    }
-    .spinner {
-      width: 48px; height: 48px;
-      border: 4px solid var(--border);
-      border-top-color: var(--blue);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin: 0 auto 16px;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .loading-steps { color: var(--text2); font-size: 13px; }
-    .loading-step { padding: 2px 0; }
-    .loading-step.active { color: var(--blue); font-weight: 600; }
-    .loading-step.done { color: var(--green); }
-
-    /* ===== 결과 패널 ===== */
-    #results { display: none; }
-
-    /* 최종 판정 배너 */
-    .verdict-banner {
-      border-radius: var(--radius);
-      padding: 20px 24px;
-      margin-bottom: 24px;
-      display: flex;
-      align-items: center;
-      gap: 20px;
-    }
-    .verdict-banner.SAFE    { background: var(--green-bg);  border: 1px solid var(--green); }
-    .verdict-banner.WARNING { background: var(--yellow-bg); border: 1px solid var(--yellow); }
-    .verdict-banner.SUSPICIOUS { background: var(--orange-bg); border: 1px solid var(--orange); }
-    .verdict-banner.DANGEROUS  { background: var(--red-bg);    border: 1px solid var(--red); }
-
-    .verdict-icon { font-size: 48px; flex-shrink: 0; }
-    .verdict-info { flex: 1; }
-    .verdict-label {
-      font-size: 24px; font-weight: 800; margin-bottom: 4px;
-    }
-    .verdict-banner.SAFE .verdict-label    { color: var(--green); }
-    .verdict-banner.WARNING .verdict-label { color: var(--yellow); }
-    .verdict-banner.SUSPICIOUS .verdict-label { color: var(--orange); }
-    .verdict-banner.DANGEROUS .verdict-label  { color: var(--red); }
-    .verdict-desc { color: var(--text2); font-size: 13px; }
-
-    /* 점수 게이지 */
-    .score-box { text-align: center; flex-shrink: 0; }
-    .score-number {
-      font-size: 40px; font-weight: 800; line-height: 1;
-      margin-bottom: 4px;
-    }
-    .verdict-banner.SAFE .score-number    { color: var(--green); }
-    .verdict-banner.WARNING .score-number { color: var(--yellow); }
-    .verdict-banner.SUSPICIOUS .score-number { color: var(--orange); }
-    .verdict-banner.DANGEROUS .score-number  { color: var(--red); }
-    .score-label { font-size: 11px; color: var(--text2); }
-
-    /* 점수 바 */
-    .score-bar-wrap {
-      background: var(--bg3); border-radius: 4px;
-      height: 8px; margin-top: 8px; width: 100px; overflow: hidden;
-    }
-    .score-bar { height: 100%; border-radius: 4px; transition: width 0.5s; }
-
-    /* ===== 요약 카드 행 ===== */
-    .summary-cards {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 12px;
-      margin-bottom: 24px;
-    }
-    .summary-card {
       background: var(--bg2);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 14px 16px;
+      padding: 52px 24px;
+      text-align: center;
+      margin-bottom: 22px;
     }
-    .summary-card .label { font-size: 11px; color: var(--text3); text-transform: uppercase; margin-bottom: 4px; }
+    .spinner {
+      width: 52px; height: 52px;
+      border: 4px solid var(--border);
+      border-top-color: var(--blue);
+      border-radius: 50%;
+      animation: spin 0.75s linear infinite;
+      margin: 0 auto 20px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+    .loading-steps { display: flex; flex-direction: column; gap: 6px; }
+    .loading-step { font-size: 13px; color: var(--text3); padding: 3px 0; transition: color 0.3s; }
+    .loading-step.active { color: var(--blue); font-weight: 600; }
+    .loading-step.done   { color: var(--green); }
+
+    /* ===== 결과 ===== */
+    #results { display: none; }
+
+    .verdict-banner {
+      border-radius: var(--radius); padding: 22px 26px;
+      margin-bottom: 22px; display: flex; align-items: center; gap: 22px; flex-wrap: wrap;
+    }
+    .verdict-banner.SAFE       { background: var(--green-bg);  border: 1px solid var(--green); }
+    .verdict-banner.WARNING    { background: var(--yellow-bg); border: 1px solid var(--yellow); }
+    .verdict-banner.SUSPICIOUS { background: var(--orange-bg); border: 1px solid var(--orange); }
+    .verdict-banner.DANGEROUS  { background: var(--red-bg);    border: 1px solid var(--red); }
+    .verdict-icon { font-size: 52px; flex-shrink: 0; }
+    .verdict-info { flex: 1; min-width: 200px; }
+    .verdict-label { font-size: 26px; font-weight: 800; margin-bottom: 5px; }
+    .verdict-banner.SAFE .verdict-label       { color: var(--green); }
+    .verdict-banner.WARNING .verdict-label    { color: var(--yellow); }
+    .verdict-banner.SUSPICIOUS .verdict-label { color: var(--orange); }
+    .verdict-banner.DANGEROUS .verdict-label  { color: var(--red); }
+    .verdict-desc { color: var(--text2); font-size: 13px; }
+    .score-box { text-align: center; flex-shrink: 0; }
+    .score-number { font-size: 44px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+    .verdict-banner.SAFE .score-number       { color: var(--green); }
+    .verdict-banner.WARNING .score-number    { color: var(--yellow); }
+    .verdict-banner.SUSPICIOUS .score-number { color: var(--orange); }
+    .verdict-banner.DANGEROUS .score-number  { color: var(--red); }
+    .score-label { font-size: 11px; color: var(--text2); }
+    .score-bar-wrap { background: var(--bg3); border-radius: 4px; height: 8px; margin-top: 8px; width: 110px; overflow: hidden; }
+    .score-bar { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
+
+    .summary-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px,1fr)); gap: 12px; margin-bottom: 22px; }
+    .summary-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+    .summary-card .label { font-size: 10px; color: var(--text3); text-transform: uppercase; margin-bottom: 5px; letter-spacing: 0.5px; }
     .summary-card .value { font-size: 14px; font-weight: 600; color: var(--text); word-break: break-all; }
-    .badge {
-      display: inline-block; border-radius: 12px;
-      padding: 2px 10px; font-size: 11px; font-weight: 600;
-    }
+
+    .badge { display: inline-block; border-radius: 12px; padding: 2px 10px; font-size: 11px; font-weight: 600; }
     .badge-green  { background: var(--green-bg);  color: var(--green);  border: 1px solid var(--green); }
     .badge-red    { background: var(--red-bg);    color: var(--red);    border: 1px solid var(--red); }
     .badge-yellow { background: var(--yellow-bg); color: var(--yellow); border: 1px solid var(--yellow); }
@@ -226,388 +512,773 @@
     .badge-gray   { background: var(--bg3);       color: var(--text2);  border: 1px solid var(--border); }
     .badge-blue   { background: var(--blue-bg);   color: var(--blue);   border: 1px solid var(--blue); }
 
-    /* ===== 섹션 카드 ===== */
-    .section {
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      margin-bottom: 20px;
-      overflow: hidden;
-    }
+    .section { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 16px; overflow: hidden; }
     .section-header {
-      background: var(--bg3);
-      border-bottom: 1px solid var(--border);
-      padding: 12px 18px;
-      display: flex; align-items: center; gap: 8px;
-      cursor: pointer;
-      user-select: none;
+      background: var(--bg3); border-bottom: 1px solid var(--border);
+      padding: 12px 18px; display: flex; align-items: center; gap: 8px;
+      cursor: pointer; user-select: none;
     }
     .section-header h3 { font-size: 14px; font-weight: 600; flex: 1; }
-    .section-header .chevron { transition: transform 0.2s; }
+    .section-header .chevron { transition: transform 0.2s; color: var(--text3); }
     .section-header.collapsed .chevron { transform: rotate(-90deg); }
     .section-body { padding: 16px 18px; }
     .section-body.collapsed { display: none; }
 
-    /* ===== 인증 결과 그리드 ===== */
-    .auth-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-    }
-    @media (max-width: 700px) { .auth-grid { grid-template-columns: 1fr; } }
-    .auth-card {
-      border-radius: var(--radius);
-      padding: 14px;
-      border: 1px solid;
-    }
+    .auth-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+    @media(max-width:680px) { .auth-grid { grid-template-columns: 1fr; } }
+    .auth-card { border-radius: var(--radius); padding: 14px; border: 1px solid; }
     .auth-card.pass    { background: var(--green-bg);  border-color: var(--green); }
     .auth-card.fail    { background: var(--red-bg);    border-color: var(--red); }
     .auth-card.warning { background: var(--yellow-bg); border-color: var(--yellow); }
     .auth-card.none    { background: var(--bg3);       border-color: var(--border); }
-    .auth-card .auth-type { font-size: 11px; font-weight: 700; color: var(--text3); margin-bottom: 4px; }
-    .auth-card .auth-status { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+    .auth-card .auth-type   { font-size: 11px; font-weight: 700; color: var(--text3); margin-bottom: 5px; }
+    .auth-card .auth-status { font-size: 15px; font-weight: 700; margin-bottom: 5px; }
     .auth-card.pass .auth-status    { color: var(--green); }
     .auth-card.fail .auth-status    { color: var(--red); }
     .auth-card.warning .auth-status { color: var(--yellow); }
     .auth-card.none .auth-status    { color: var(--text2); }
     .auth-card .auth-detail { font-size: 11px; color: var(--text2); }
 
-    /* ===== 도메인 분석 테이블 ===== */
     .domain-table { width: 100%; border-collapse: collapse; }
-    .domain-table th {
-      text-align: left; font-size: 11px; color: var(--text3);
-      padding: 6px 10px; border-bottom: 1px solid var(--border);
-      text-transform: uppercase;
-    }
-    .domain-table td {
-      padding: 10px 10px; border-bottom: 1px solid var(--border);
-      font-size: 12px; vertical-align: top;
-    }
+    .domain-table th { text-align: left; font-size: 10px; color: var(--text3); padding: 6px 10px; border-bottom: 1px solid var(--border); text-transform: uppercase; }
+    .domain-table td { padding: 10px; border-bottom: 1px solid var(--border); font-size: 12px; vertical-align: top; }
     .domain-table tr:last-child td { border-bottom: none; }
     .domain-table tr:hover td { background: var(--bg3); }
     .domain-name { font-weight: 600; color: var(--blue); font-family: monospace; }
     .record-list { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
-    .record-tag {
-      background: var(--bg3); border: 1px solid var(--border);
-      border-radius: 4px; padding: 1px 6px; font-size: 10px;
-      font-family: monospace; color: var(--text2);
-    }
-    .check-icon { font-size: 14px; }
+    .record-tag { background: var(--bg3); border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; font-size: 10px; font-family: monospace; color: var(--text2); }
 
-    /* ===== IP 분석 ===== */
-    .ip-card {
-      background: var(--bg3);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 14px 16px;
-      margin-bottom: 10px;
-    }
+    .ip-card { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 10px; }
     .ip-card:last-child { margin-bottom: 0; }
-    .ip-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .ip-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
     .ip-addr { font-family: monospace; font-size: 15px; font-weight: 700; color: var(--blue); }
-    .ip-details { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; }
+    .ip-details { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px,1fr)); gap: 6px; }
     .ip-detail-item { font-size: 11px; color: var(--text2); }
     .ip-detail-item strong { color: var(--text); }
 
-    /* ===== 발신 경로 ===== */
-    .hop-list { position: relative; }
-    .hop-item {
-      display: flex; gap: 12px; margin-bottom: 12px;
-    }
+    .hop-item { display: flex; gap: 12px; margin-bottom: 12px; }
     .hop-line { display: flex; flex-direction: column; align-items: center; width: 20px; flex-shrink: 0; }
-    .hop-dot {
-      width: 12px; height: 12px; border-radius: 50%;
-      background: var(--blue); flex-shrink: 0; margin-top: 4px;
-    }
+    .hop-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--blue); flex-shrink: 0; margin-top: 4px; }
     .hop-dot.first { background: var(--green); }
     .hop-dot.last  { background: var(--text3); }
-    .hop-connector {
-      width: 2px; background: var(--border); flex: 1; margin-top: 2px;
-    }
-    .hop-content {
-      flex: 1; background: var(--bg3); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 10px 14px;
-    }
+    .hop-connector { width: 2px; background: var(--border); flex: 1; margin-top: 2px; }
+    .hop-content { flex: 1; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 14px; }
     .hop-label { font-size: 10px; color: var(--text3); margin-bottom: 4px; text-transform: uppercase; }
     .hop-from  { font-size: 13px; font-weight: 600; font-family: monospace; }
     .hop-meta  { font-size: 11px; color: var(--text2); margin-top: 4px; }
     .hop-ips   { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
-    .hop-ip-tag {
-      background: var(--bg2); border: 1px solid var(--border);
-      border-radius: 4px; padding: 1px 7px; font-size: 10px;
-      font-family: monospace; color: var(--text2);
-    }
+    .hop-ip-tag { background: var(--bg2); border: 1px solid var(--border); border-radius: 4px; padding: 1px 7px; font-size: 10px; font-family: monospace; color: var(--text2); }
 
-    /* ===== 위험/신뢰 요인 ===== */
     .factors-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    @media (max-width: 700px) { .factors-grid { grid-template-columns: 1fr; } }
+    @media(max-width:640px) { .factors-grid { grid-template-columns: 1fr; } }
     .factor-list { list-style: none; }
-    .factor-item {
-      display: flex; align-items: flex-start; gap: 8px;
-      padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 12px;
-    }
+    .factor-item { display: flex; align-items: flex-start; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
     .factor-item:last-child { border-bottom: none; }
-    .factor-delta {
-      font-size: 11px; font-weight: 700; flex-shrink: 0;
-      min-width: 36px; text-align: right;
-    }
+    .factor-delta { font-size: 11px; font-weight: 700; flex-shrink: 0; min-width: 36px; text-align: right; }
     .factor-delta.neg { color: var(--red); }
     .factor-delta.pos { color: var(--green); }
 
-    /* ===== 원본 헤더 ===== */
     .raw-header {
-      background: var(--bg3); border-radius: var(--radius);
-      padding: 14px; font-family: monospace; font-size: 11px;
-      line-height: 1.8; color: var(--text2); white-space: pre-wrap;
-      word-break: break-all; max-height: 400px; overflow-y: auto;
+      background: var(--bg3); border-radius: var(--radius); padding: 14px;
+      font-family: monospace; font-size: 11px; line-height: 1.9;
+      color: var(--text2); white-space: pre-wrap; word-break: break-all;
+      max-height: 420px; overflow-y: auto;
     }
 
-    /* ===== 도메인 일관성 알림 ===== */
-    .issue-box {
-      border-radius: var(--radius); padding: 10px 14px;
-      margin-bottom: 8px; font-size: 12px; display: flex; gap: 8px;
-    }
+    .issue-box { border-radius: var(--radius); padding: 9px 13px; margin-bottom: 7px; font-size: 12px; display: flex; gap: 8px; }
     .issue-box.critical { background: var(--red-bg);    border: 1px solid var(--red);    color: var(--red); }
     .issue-box.high     { background: var(--red-bg);    border: 1px solid var(--red);    color: var(--red); }
     .issue-box.medium   { background: var(--yellow-bg); border: 1px solid var(--yellow); color: var(--yellow); }
     .issue-box.low      { background: var(--blue-bg);   border: 1px solid var(--blue);   color: var(--blue); }
     .issue-box.info     { background: var(--bg3);       border: 1px solid var(--border); color: var(--text2); }
 
-    /* ===== 오류 박스 ===== */
-    .error-box {
-      background: var(--red-bg); border: 1px solid var(--red);
-      border-radius: var(--radius); padding: 16px 20px;
-      color: var(--red); margin-bottom: 16px;
-    }
-
-    /* ===== SPF 레코드 파서 표시 ===== */
     .spf-mech { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-    .spf-tag {
-      border-radius: 4px; padding: 2px 8px; font-size: 11px;
-      font-family: monospace;
-    }
-    .spf-tag.ip4    { background: #0d2818; color: var(--green);  border: 1px solid var(--green); }
-    .spf-tag.ip6    { background: #0d2818; color: var(--green);  border: 1px solid var(--green); }
+    .spf-tag { border-radius: 4px; padding: 2px 8px; font-size: 11px; font-family: monospace; }
+    .spf-tag.ip4     { background: #0d2818; color: var(--green);  border: 1px solid var(--green); }
+    .spf-tag.ip6     { background: #0d2818; color: var(--green);  border: 1px solid var(--green); }
     .spf-tag.include { background: var(--blue-bg); color: var(--blue); border: 1px solid var(--blue); }
-    .spf-tag.mx     { background: var(--bg3); color: var(--purple); border: 1px solid var(--purple); }
-    .spf-tag.a      { background: var(--bg3); color: var(--purple); border: 1px solid var(--purple); }
-    .spf-tag.all    { background: var(--red-bg); color: var(--red); border: 1px solid var(--red); }
-    .spf-tag.all.pass  { background: var(--green-bg); color: var(--green); border-color: var(--green); }
+    .spf-tag.mx      { background: var(--bg3); color: var(--purple); border: 1px solid var(--purple); }
+    .spf-tag.a       { background: var(--bg3); color: var(--purple); border: 1px solid var(--purple); }
+    .spf-tag.all     { background: var(--red-bg); color: var(--red); border: 1px solid var(--red); }
     .spf-tag.redirect { background: var(--yellow-bg); color: var(--yellow); border: 1px solid var(--yellow); }
 
-    /* ===== 반응형 ===== */
-    @media (max-width: 600px) {
-      .verdict-banner { flex-wrap: wrap; }
-      .auth-grid { grid-template-columns: 1fr 1fr; }
+    .error-box { background: var(--red-bg); border: 1px solid var(--red); border-radius: var(--radius); padding: 16px 20px; color: var(--red); margin-bottom: 16px; }
+
+    /* ===== 모달 (개인정보 상세) ===== */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.75); z-index: 1000;
+      align-items: center; justify-content: center; padding: 20px;
     }
+    .modal-overlay.show { display: flex; }
+    .modal-box {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      width: 100%; max-width: 560px;
+      max-height: 80vh;
+      display: flex; flex-direction: column;
+      animation: fadeUp 0.2s ease;
+    }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+    .modal-header {
+      padding: 18px 22px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .modal-header h3 { font-size: 16px; font-weight: 700; }
+    .modal-close { background: none; border: none; color: var(--text2); font-size: 20px; cursor: pointer; padding: 2px 6px; border-radius: 4px; }
+    .modal-close:hover { background: var(--bg3); color: var(--text); }
+    .modal-body { padding: 20px 22px; overflow-y: auto; font-size: 12px; color: var(--text2); line-height: 1.8; }
+    .modal-body h4 { color: var(--text); font-size: 13px; margin: 14px 0 6px; }
+    .modal-body h4:first-child { margin-top: 0; }
+    .modal-body table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+    .modal-body th, .modal-body td { border: 1px solid var(--border); padding: 7px 10px; font-size: 11px; }
+    .modal-body th { background: var(--bg3); color: var(--text); font-weight: 600; }
+    .modal-footer { padding: 14px 22px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; }
 
     /* ===== 유틸 ===== */
-    .mt8 { margin-top: 8px; }
-    .mt12 { margin-top: 12px; }
-    .text2 { color: var(--text2); }
-    .text3 { color: var(--text3); }
+    .divider { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
     .mono { font-family: monospace; }
     .empty-msg { color: var(--text3); font-size: 12px; font-style: italic; padding: 10px 0; }
-    .divider { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
   </style>
 </head>
 <body>
 
-<!-- 헤더 -->
+<!-- ===== 공통 헤더 ===== -->
 <header class="site-header">
   <span class="logo">🔍</span>
-  <div>
+  <div class="header-title-wrap">
     <h1>발신정보 분석기</h1>
-    <div class="subtitle">이메일 헤더 · EML 파일 분석 | DNS 검증 | SPF / DKIM / DMARC</div>
+    <div class="sub">이메일 헤더 · EML 파일 발신 검증 시스템</div>
+  </div>
+  <div class="header-right">
+    <div class="user-chip" id="headerUserChip">
+      <div class="avatar" id="headerAvatar">?</div>
+      <span id="headerUserName">-</span>
+    </div>
   </div>
 </header>
 
-<main class="main">
+<!-- ===== 스텝 바 ===== -->
+<div class="step-bar">
+  <div class="step-item active" id="stepItem1">
+    <div class="step-num">1</div>
+    <div class="step-label">사용자 정보 입력</div>
+  </div>
+  <div class="step-item" id="stepItem2">
+    <div class="step-num">2</div>
+    <div class="step-label">메일 파일 업로드 · 분석</div>
+  </div>
+</div>
 
-  <!-- 업로드 패널 -->
-  <div class="upload-panel">
-    <div class="tabs">
-      <button class="tab-btn active" onclick="switchTab('file')">📎 EML 파일 업로드</button>
-      <button class="tab-btn" onclick="switchTab('text')">📋 헤더 텍스트 입력</button>
+<!-- ===================================================== -->
+<!-- ===== [PAGE 1] 사용자 정보 입력 ===== -->
+<!-- ===================================================== -->
+<div class="page active" id="page1">
+  <div class="main">
+    <div class="reg-card">
+
+      <!-- 카드 헤더 -->
+      <div class="reg-card-header">
+        <div class="reg-card-icon">👤</div>
+        <div>
+          <h2>사용자 정보 입력</h2>
+          <p>
+            발신정보 분석기를 이용하시기 전에 기본 정보를 입력해 주세요.<br>
+            입력하신 정보는 분석 리포트 생성 및 서비스 품질 향상에 활용됩니다.
+          </p>
+        </div>
+      </div>
+
+      <!-- 폼 -->
+      <div class="reg-form">
+
+        <!-- 행 1: 사용자명 / 회사명 -->
+        <div class="form-row">
+          <div class="form-group">
+            <label>
+              사용자명 <span class="required">*</span>
+            </label>
+            <input class="form-input" id="inp_name" type="text"
+              placeholder="홍길동" maxlength="50"
+              oninput="validateField('name')" />
+            <span class="field-error" id="err_name">⚠ 사용자명을 입력해 주세요.</span>
+          </div>
+          <div class="form-group">
+            <label>
+              회사명 / 기관명 <span class="required">*</span>
+            </label>
+            <input class="form-input" id="inp_company" type="text"
+              placeholder="(주)회사명" maxlength="80"
+              oninput="validateField('company')" />
+            <span class="field-error" id="err_company">⚠ 회사명을 입력해 주세요.</span>
+          </div>
+        </div>
+
+        <!-- 행 2: 이메일 / 전화번호 -->
+        <div class="form-row">
+          <div class="form-group">
+            <label>
+              이메일 주소 <span class="required">*</span>
+            </label>
+            <input class="form-input" id="inp_email" type="email"
+              placeholder="example@company.com" maxlength="100"
+              oninput="validateField('email')" />
+            <span class="field-error" id="err_email">⚠ 올바른 이메일 주소를 입력해 주세요.</span>
+          </div>
+          <div class="form-group">
+            <label>
+              전화번호 <span class="optional">선택</span>
+            </label>
+            <div class="phone-wrap">
+              <span class="phone-flag">📞</span>
+              <input class="form-input" id="inp_phone" type="tel"
+                placeholder="010-0000-0000" maxlength="20"
+                oninput="formatPhone(this)" />
+            </div>
+          </div>
+        </div>
+
+        <!-- 개인정보 동의 섹션 -->
+        <div class="privacy-section">
+          <div class="privacy-header" onclick="togglePrivacy()">
+            <div class="privacy-header-left">
+              <span class="icon">🔒</span>
+              <strong>개인정보 수집 및 이용 동의</strong>
+              <span>필수</span>
+            </div>
+            <span class="privacy-toggle-icon" id="privacyToggleIcon">▼</span>
+          </div>
+          <div class="privacy-body" id="privacyBody">
+
+            <!-- 전체 동의 버튼 -->
+            <button class="agree-all-btn" id="agreeAllBtn" onclick="toggleAgreeAll()">
+              ☑ 아래 항목에 모두 동의합니다
+            </button>
+
+            <!-- 동의 항목 -->
+            <div class="check-group">
+
+              <!-- ① 필수: 서비스 이용약관 -->
+              <div class="check-item required-check" id="check_terms" onclick="toggleCheck('terms')">
+                <input type="checkbox" id="chk_terms" />
+                <div class="check-box"><span class="check-mark">✓</span></div>
+                <div class="check-text">
+                  <div class="check-title">
+                    서비스 이용약관 동의
+                    <span class="badge-req">[필수]</span>
+                  </div>
+                  <div class="check-desc">발신정보 분석기 서비스 이용을 위한 약관에 동의합니다.</div>
+                </div>
+                <span class="view-detail" onclick="openModal('terms'); event.stopPropagation();">전문보기</span>
+              </div>
+
+              <!-- ② 필수: 개인정보 수집·이용 -->
+              <div class="check-item required-check" id="check_privacy" onclick="toggleCheck('privacy')">
+                <input type="checkbox" id="chk_privacy" />
+                <div class="check-box"><span class="check-mark">✓</span></div>
+                <div class="check-text">
+                  <div class="check-title">
+                    개인정보 수집 및 이용 동의
+                    <span class="badge-req">[필수]</span>
+                  </div>
+                  <div class="check-desc">사용자명, 회사명, 이메일, 전화번호를 수집하며, 서비스 제공 목적으로만 이용합니다.</div>
+                </div>
+                <span class="view-detail" onclick="openModal('privacy'); event.stopPropagation();">전문보기</span>
+              </div>
+
+              <!-- ③ 선택: 마케팅 활용 -->
+              <div class="check-item" id="check_marketing" onclick="toggleCheck('marketing')">
+                <input type="checkbox" id="chk_marketing" />
+                <div class="check-box"><span class="check-mark">✓</span></div>
+                <div class="check-text">
+                  <div class="check-title">
+                    마케팅 활용 및 서비스 개선 목적 이용 동의
+                    <span class="badge-opt">[선택]</span>
+                  </div>
+                  <div class="check-desc">서비스 품질 향상 및 신규 기능 안내 목적으로 정보를 활용합니다. 동의하지 않아도 서비스 이용이 가능합니다.</div>
+                </div>
+                <span class="view-detail" onclick="openModal('marketing'); event.stopPropagation();">전문보기</span>
+              </div>
+
+            </div><!-- /check-group -->
+
+            <!-- 동의 안내 -->
+            <div style="margin-top:12px; padding:10px 14px; background:var(--bg); border-radius:6px; font-size:11px; color:var(--text3); line-height:1.7;">
+              📌 수집된 개인정보는 서비스 제공 목적으로만 활용되며, 제3자에게 제공하지 않습니다.<br>
+              📌 선택 항목 미동의 시에도 서비스 이용에는 제한이 없습니다.<br>
+              📌 개인정보 보유기간: 서비스 이용 종료 후 <strong style="color:var(--text)">3년</strong> 또는 관계 법령에 따른 기간
+            </div>
+
+          </div><!-- /privacy-body -->
+        </div><!-- /privacy-section -->
+
+        <!-- 동의 오류 메시지 -->
+        <div class="field-error" id="err_agree" style="margin-top:10px; font-size:12px;">
+          ⚠ 필수 동의 항목에 모두 체크해 주세요.
+        </div>
+
+        <!-- 폼 하단 -->
+        <div class="form-footer">
+          <div class="form-footer-left">
+            <span style="color:var(--red)">*</span> 표시 항목은 필수 입력입니다.
+          </div>
+          <button class="btn btn-primary" id="nextBtn" onclick="goToStep2()">
+            다음 단계 — 파일 업로드 →
+          </button>
+        </div>
+
+      </div><!-- /reg-form -->
+    </div><!-- /reg-card -->
+  </div>
+</div>
+
+<!-- ===================================================== -->
+<!-- ===== [PAGE 2] 분석 페이지 ===== -->
+<!-- ===================================================== -->
+<div class="page" id="page2">
+  <div class="main" style="max-width:1280px;">
+
+    <!-- 사용자 정보 요약 바 -->
+    <div class="user-info-bar" id="userInfoBar">
+      <div class="uib-avatar" id="uibAvatar">?</div>
+      <div class="uib-info">
+        <div class="uib-name" id="uibName">-</div>
+        <div class="uib-meta" id="uibMeta">-</div>
+      </div>
+      <div class="uib-badge">✅ 인증 완료</div>
+      <button class="btn btn-ghost" style="padding:6px 14px;font-size:12px;" onclick="goBackToStep1()">
+        ← 정보 수정
+      </button>
     </div>
 
-    <!-- 파일 업로드 탭 -->
-    <div id="tab-file" class="tab-content active">
-      <div class="drop-zone" id="dropZone"
-           ondragover="onDragOver(event)"
-           ondragleave="onDragLeave(event)"
-           ondrop="onDrop(event)">
-        <input type="file" id="fileInput" accept=".eml,.txt,.msg" onchange="onFileChange(event)"/>
-        <div class="icon">📧</div>
-        <p>EML 파일을 드래그하거나 클릭하여 업로드</p>
-        <div class="hint">.eml · .txt · .msg 파일 지원 (최대 10MB)</div>
-        <div class="filename" id="selectedFileName"></div>
+    <!-- 업로드 패널 -->
+    <div class="upload-panel">
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('file')">📎 EML 파일 업로드</button>
+        <button class="tab-btn" onclick="switchTab('text')">📋 헤더 텍스트 입력</button>
+      </div>
+
+      <!-- 파일 탭 -->
+      <div id="tab-file" class="tab-content active">
+        <div class="drop-zone" id="dropZone"
+             ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+          <input type="file" id="fileInput" accept=".eml,.txt,.msg" onchange="onFileChange(event)"/>
+          <div class="dz-icon">📧</div>
+          <div class="dz-title">EML 파일을 여기에 드래그하거나 클릭하여 선택</div>
+          <div class="dz-hint">.eml · .txt · .msg 지원 | 최대 10MB</div>
+          <div class="dz-file-info" id="dzFileInfo"></div>
+        </div>
+      </div>
+
+      <!-- 텍스트 탭 -->
+      <div id="tab-text" class="tab-content">
+        <textarea class="header-input" id="headerText"
+          placeholder="이메일 헤더를 여기에 붙여넣으세요&#10;&#10;예) From, To, Subject, Received, Authentication-Results, DKIM-Signature 등의 헤더 전체"></textarea>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" id="analyzeBtn" onclick="analyze()">
+          🔍 발신정보 분석 시작
+        </button>
+        <button class="btn btn-ghost" onclick="resetAnalysis()">초기화</button>
+        <span class="sample-link" onclick="loadSample()">샘플 데이터 불러오기</span>
       </div>
     </div>
 
-    <!-- 텍스트 입력 탭 -->
-    <div id="tab-text" class="tab-content">
-      <textarea class="header-input" id="headerText"
-        placeholder="이메일 헤더를 여기에 붙여넣으세요...
-        
-예) From, To, Subject, Received, Authentication-Results, DKIM-Signature 등의 헤더"></textarea>
+    <!-- 로딩 -->
+    <div class="loading-overlay" id="loadingOverlay">
+      <div class="spinner"></div>
+      <div class="loading-title">발신정보 분석 중...</div>
+      <div class="loading-steps">
+        <div class="loading-step" id="step1">📨 이메일 헤더 파싱</div>
+        <div class="loading-step" id="step2">🌐 DNS 서버(8.8.8.8) 조회</div>
+        <div class="loading-step" id="step3">🔎 SPF / DKIM / DMARC 검증</div>
+        <div class="loading-step" id="step4">📊 종합 분석 및 판정</div>
+      </div>
     </div>
 
-    <div class="btn-row">
-      <button class="btn" id="analyzeBtn" onclick="analyze()">
-        <span>🔍</span> 분석 시작
-      </button>
-      <button class="btn btn-ghost" onclick="reset()">초기화</button>
-      <span class="sample-link" onclick="loadSample()">샘플 데이터 불러오기</span>
+    <!-- 결과 -->
+    <div id="results"></div>
+
+  </div>
+</div>
+
+<!-- ===================================================== -->
+<!-- ===== 개인정보 상세 모달 ===== -->
+<!-- ===================================================== -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModalOutside(event)">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="modalTitle">-</h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="agreeFromModal()">동의하고 닫기</button>
     </div>
   </div>
+</div>
 
-  <!-- 로딩 -->
-  <div class="loading-overlay" id="loadingOverlay">
-    <div class="spinner"></div>
-    <div class="loading-steps">
-      <div class="loading-step" id="step1">📨 이메일 헤더 파싱 중...</div>
-      <div class="loading-step" id="step2">🌐 DNS 서버(8.8.8.8) 조회 중...</div>
-      <div class="loading-step" id="step3">🔎 SPF / DKIM / DMARC 검증 중...</div>
-      <div class="loading-step" id="step4">📊 종합 분석 및 판정 중...</div>
-    </div>
-  </div>
-
-  <!-- 결과 -->
-  <div id="results"></div>
-
-</main>
 
 <script>
-// ============================================================
-// 상태 변수
-// ============================================================
-let selectedFile = null;
+// =============================================================
+// 상태
+// =============================================================
 let currentTab = 'file';
-let analysisData = null;
+let selectedFile = null;
+let currentUser  = null;
+let currentModalType = null;
 
-// ============================================================
-// 탭 전환
-// ============================================================
+const MODAL_CONTENTS = {
+  terms: {
+    title: '서비스 이용약관',
+    body: `
+      <h4>제1조 (목적)</h4>
+      본 약관은 발신정보 분석기(이하 "서비스") 이용에 관한 조건 및 절차,
+      이용자와 서비스 제공자의 권리·의무·책임사항을 규정함을 목적으로 합니다.
+
+      <h4>제2조 (서비스의 내용)</h4>
+      서비스는 이메일 헤더 및 EML 파일을 분석하여 발신 서버의 정상 여부를
+      검증하는 기능을 제공합니다. 서비스 결과는 참고용으로만 활용되며,
+      법적 효력을 갖지 않습니다.
+
+      <h4>제3조 (이용자의 의무)</h4>
+      <ul style="padding-left:16px; margin:6px 0;">
+        <li>이용자는 타인의 이메일 파일을 무단으로 업로드해서는 안 됩니다.</li>
+        <li>서비스를 악의적 목적으로 사용해서는 안 됩니다.</li>
+        <li>분석 결과를 무단 배포하거나 상업적으로 이용해서는 안 됩니다.</li>
+      </ul>
+
+      <h4>제4조 (면책사항)</h4>
+      서비스는 분석 결과의 정확성을 보장하지 않으며, 분석 결과에 의한
+      손해에 대해 책임을 지지 않습니다.
+
+      <h4>제5조 (약관의 변경)</h4>
+      서비스 제공자는 약관을 변경할 수 있으며, 변경 시 서비스 내 공지합니다.
+    `
+  },
+  privacy: {
+    title: '개인정보 수집 및 이용 동의',
+    body: `
+      <h4>1. 수집 항목</h4>
+      <table>
+        <tr><th>구분</th><th>항목</th><th>필수/선택</th></tr>
+        <tr><td>필수</td><td>사용자명, 회사명, 이메일 주소</td><td>필수</td></tr>
+        <tr><td>선택</td><td>전화번호</td><td>선택</td></tr>
+        <tr><td>자동수집</td><td>접속 IP, 접속 일시, 브라우저 정보</td><td>자동</td></tr>
+      </table>
+
+      <h4>2. 수집 및 이용 목적</h4>
+      <table>
+        <tr><th>목적</th><th>항목</th></tr>
+        <tr><td>서비스 제공 및 이용자 식별</td><td>사용자명, 이메일</td></tr>
+        <tr><td>분석 리포트 발송 (선택 시)</td><td>이메일, 전화번호</td></tr>
+        <tr><td>서비스 품질 향상</td><td>접속 정보</td></tr>
+        <tr><td>민원 처리 및 고객 지원</td><td>사용자명, 이메일, 전화번호</td></tr>
+      </table>
+
+      <h4>3. 보유 및 이용 기간</h4>
+      서비스 이용 종료 후 <strong>3년</strong> 또는 관계 법령에서 정한 기간까지 보유합니다.
+      <br><br>
+      법령에 따른 보존 기간:
+      <ul style="padding-left:16px; margin:4px 0; font-size:11px;">
+        <li>전자상거래법 - 소비자 불만 기록: 3년</li>
+        <li>통신비밀보호법 - 접속 기록: 3개월</li>
+      </ul>
+
+      <h4>4. 제3자 제공</h4>
+      수집된 개인정보는 원칙적으로 제3자에게 제공하지 않습니다.
+      단, 법령에 의한 경우는 예외로 합니다.
+
+      <h4>5. 개인정보 처리 위탁</h4>
+      현재 개인정보 처리 위탁 업체는 없습니다.
+
+      <h4>6. 정보주체의 권리</h4>
+      이용자는 언제든지 개인정보 열람, 정정, 삭제, 처리정지를 요청할 수 있습니다.
+    `
+  },
+  marketing: {
+    title: '마케팅 활용 목적 개인정보 이용 동의',
+    body: `
+      <h4>수집 목적</h4>
+      서비스 품질 향상, 신규 기능 안내, 보안 관련 정보 제공 등 마케팅 목적으로
+      개인정보를 활용합니다.
+
+      <h4>수집 항목</h4>
+      이메일 주소, 전화번호
+
+      <h4>보유 및 이용 기간</h4>
+      동의 철회 시 또는 서비스 탈퇴 시까지
+
+      <h4>동의 거부 권리</h4>
+      본 항목은 <strong>선택 사항</strong>으로, 동의하지 않아도 서비스 이용에 제한이 없습니다.
+      다만 미동의 시 서비스 관련 유용한 정보를 받지 못할 수 있습니다.
+    `
+  }
+};
+
+// =============================================================
+// 스텝 이동
+// =============================================================
+function setStep(n) {
+  document.querySelectorAll('.page').forEach((p, i) => {
+    p.classList.toggle('active', i + 1 === n);
+  });
+  document.getElementById('stepItem1').className =
+    'step-item ' + (n === 1 ? 'active' : 'done');
+  document.getElementById('stepItem2').className =
+    'step-item ' + (n === 2 ? 'active' : n > 2 ? 'done' : '');
+}
+
+function goBackToStep1() {
+  setStep(1);
+}
+
+// =============================================================
+// 개인정보 토글
+// =============================================================
+function togglePrivacy() {
+  const body = document.getElementById('privacyBody');
+  const icon = document.getElementById('privacyToggleIcon');
+  const isOpen = body.classList.toggle('show');
+  icon.classList.toggle('open', isOpen);
+}
+
+// =============================================================
+// 전체 동의 토글
+// =============================================================
+function toggleAgreeAll() {
+  const allChecked = ['terms','privacy','marketing'].every(k => isChecked(k));
+  ['terms','privacy','marketing'].forEach(k => setChecked(k, !allChecked));
+  updateAgreeAllBtn();
+}
+
+function updateAgreeAllBtn() {
+  const allChecked = ['terms','privacy','marketing'].every(k => isChecked(k));
+  const btn = document.getElementById('agreeAllBtn');
+  btn.classList.toggle('all-checked', allChecked);
+  btn.textContent = allChecked ? '☑ 모두 동의하셨습니다' : '☑ 아래 항목에 모두 동의합니다';
+}
+
+// =============================================================
+// 체크박스 토글
+// =============================================================
+function isChecked(key) {
+  return document.getElementById('check_' + key).classList.contains('checked');
+}
+function setChecked(key, val) {
+  const item = document.getElementById('check_' + key);
+  item.classList.toggle('checked', val);
+  document.getElementById('chk_' + key).checked = val;
+}
+function toggleCheck(key) {
+  setChecked(key, !isChecked(key));
+  updateAgreeAllBtn();
+  // 에러 메시지 숨기기
+  document.getElementById('err_agree').classList.remove('show');
+}
+
+// =============================================================
+// 폼 유효성 검사
+// =============================================================
+function validateField(field) {
+  const inp = document.getElementById('inp_' + field);
+  const err = document.getElementById('err_' + field);
+  let valid = false;
+
+  if (field === 'email') {
+    valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inp.value.trim());
+  } else {
+    valid = inp.value.trim().length >= 1;
+  }
+
+  inp.classList.toggle('error', !valid && inp.value.trim() !== '');
+  inp.classList.toggle('valid', valid);
+  err.classList.toggle('show', !valid && inp.value.trim() !== '');
+  return valid;
+}
+
+function formatPhone(inp) {
+  let v = inp.value.replace(/\D/g, '');
+  if (v.length >= 11)      v = v.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
+  else if (v.length >= 7)  v = v.replace(/(\d{3})(\d{4})(\d+)/,   '$1-$2-$3');
+  else if (v.length >= 4)  v = v.replace(/(\d{3})(\d+)/,           '$1-$2');
+  inp.value = v;
+}
+
+function validateAll() {
+  const n = validateField('name');
+  const c = validateField('company');
+  const e = validateField('email');
+
+  const reqAgreed = isChecked('terms') && isChecked('privacy');
+  if (!reqAgreed) {
+    document.getElementById('err_agree').classList.add('show');
+    // 개인정보 섹션 펼치기
+    const body = document.getElementById('privacyBody');
+    if (!body.classList.contains('show')) togglePrivacy();
+  }
+
+  return n && c && e && reqAgreed;
+}
+
+// =============================================================
+// 2단계로 이동
+// =============================================================
+function goToStep2() {
+  if (!validateAll()) {
+    // 첫 번째 오류 입력창으로 스크롤
+    const firstErr = document.querySelector('.form-input.error, .field-error.show');
+    if (firstErr) firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+
+  currentUser = {
+    name:      document.getElementById('inp_name').value.trim(),
+    company:   document.getElementById('inp_company').value.trim(),
+    email:     document.getElementById('inp_email').value.trim(),
+    phone:     document.getElementById('inp_phone').value.trim(),
+    agreeMarketing: isChecked('marketing'),
+    timestamp: new Date().toISOString()
+  };
+
+  // 헤더 사용자 칩
+  const initial = currentUser.name.charAt(0).toUpperCase();
+  document.getElementById('headerAvatar').textContent   = initial;
+  document.getElementById('headerUserName').textContent = currentUser.name;
+  document.getElementById('headerUserChip').style.display = 'flex';
+
+  // 2단계 사용자 바
+  document.getElementById('uibAvatar').textContent = initial;
+  document.getElementById('uibName').textContent   = currentUser.name + ' · ' + currentUser.company;
+  document.getElementById('uibMeta').textContent   = currentUser.email +
+    (currentUser.phone ? '  |  ' + currentUser.phone : '');
+
+  setStep(2);
+
+  // 서버에 사용자 정보 저장 (비동기, 실패해도 진행)
+  fetch('/api/user', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(currentUser)
+  }).catch(() => {});
+}
+
+// =============================================================
+// 모달
+// =============================================================
+function openModal(type) {
+  currentModalType = type;
+  const c = MODAL_CONTENTS[type];
+  document.getElementById('modalTitle').textContent  = c.title;
+  document.getElementById('modalBody').innerHTML     = c.body;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('show');
+  currentModalType = null;
+}
+function closeModalOutside(e) {
+  if (e.target === document.getElementById('modalOverlay')) closeModal();
+}
+function agreeFromModal() {
+  if (currentModalType) setChecked(currentModalType, true);
+  updateAgreeAllBtn();
+  closeModal();
+}
+
+// =============================================================
+// [2단계] 파일 업로드 / 분석
+// =============================================================
 function switchTab(tab) {
   currentTab = tab;
   document.querySelectorAll('.tab-btn').forEach((b, i) => {
-    b.classList.toggle('active', (i === 0 && tab === 'file') || (i === 1 && tab === 'text'));
+    b.classList.toggle('active', (i===0&&tab==='file')||(i===1&&tab==='text'));
   });
-  document.getElementById('tab-file').classList.toggle('active', tab === 'file');
-  document.getElementById('tab-text').classList.toggle('active', tab === 'text');
+  document.getElementById('tab-file').classList.toggle('active', tab==='file');
+  document.getElementById('tab-text').classList.toggle('active', tab==='text');
 }
 
-// ============================================================
-// 파일 업로드
-// ============================================================
-function onDragOver(e) {
-  e.preventDefault();
-  document.getElementById('dropZone').classList.add('dragging');
-}
-function onDragLeave(e) {
-  document.getElementById('dropZone').classList.remove('dragging');
-}
+function onDragOver(e)  { e.preventDefault(); document.getElementById('dropZone').classList.add('dragging'); }
+function onDragLeave(e) { document.getElementById('dropZone').classList.remove('dragging'); }
 function onDrop(e) {
   e.preventDefault();
   document.getElementById('dropZone').classList.remove('dragging');
-  const files = e.dataTransfer.files;
-  if (files.length > 0) setFile(files[0]);
+  if (e.dataTransfer.files.length > 0) setFile(e.dataTransfer.files[0]);
 }
-function onFileChange(e) {
-  if (e.target.files.length > 0) setFile(e.target.files[0]);
-}
+function onFileChange(e) { if (e.target.files.length > 0) setFile(e.target.files[0]); }
 function setFile(file) {
   selectedFile = file;
-  const el = document.getElementById('selectedFileName');
-  el.textContent = `✅ 선택됨: ${file.name} (${(file.size/1024).toFixed(1)} KB)`;
+  const el = document.getElementById('dzFileInfo');
+  el.textContent = `✅ 선택됨: ${file.name}  (${(file.size/1024).toFixed(1)} KB)`;
   el.style.display = 'block';
 }
 
-// ============================================================
-// 샘플 로드
-// ============================================================
 async function loadSample() {
   try {
-    const res = await fetch('/api/sample');
+    const res  = await fetch('/api/sample');
     const data = await res.json();
     switchTab('text');
     document.getElementById('headerText').value = data.sample;
-  } catch(e) {
-    alert('샘플 로드 실패: ' + e.message);
-  }
+  } catch(e) { alert('샘플 로드 실패: ' + e.message); }
 }
 
-// ============================================================
-// 초기화
-// ============================================================
-function reset() {
+function resetAnalysis() {
   selectedFile = null;
-  document.getElementById('fileInput').value = '';
+  document.getElementById('fileInput').value  = '';
   document.getElementById('headerText').value = '';
-  document.getElementById('selectedFileName').style.display = 'none';
-  document.getElementById('selectedFileName').textContent = '';
-  document.getElementById('results').style.display = 'none';
-  document.getElementById('results').innerHTML = '';
+  document.getElementById('dzFileInfo').style.display = 'none';
+  document.getElementById('results').style.display    = 'none';
+  document.getElementById('results').innerHTML        = '';
   document.getElementById('loadingOverlay').style.display = 'none';
 }
 
-// ============================================================
-// 분석 시작
-// ============================================================
 async function analyze() {
   document.getElementById('analyzeBtn').disabled = true;
   document.getElementById('loadingOverlay').style.display = 'block';
   document.getElementById('results').style.display = 'none';
   document.getElementById('results').innerHTML = '';
-  
-  // 로딩 단계 애니메이션
+
   const steps = ['step1','step2','step3','step4'];
-  steps.forEach(s => {
-    document.getElementById(s).className = 'loading-step';
-  });
-  let stepIdx = 0;
-  const stepTimer = setInterval(() => {
-    if (stepIdx > 0) document.getElementById(steps[stepIdx-1]).className = 'loading-step done';
-    if (stepIdx < steps.length) {
-      document.getElementById(steps[stepIdx]).className = 'loading-step active';
-      stepIdx++;
+  steps.forEach(s => { document.getElementById(s).className = 'loading-step'; });
+  let idx = 0;
+  const timer = setInterval(() => {
+    if (idx > 0) document.getElementById(steps[idx-1]).className = 'loading-step done';
+    if (idx < steps.length) {
+      document.getElementById(steps[idx]).className = 'loading-step active';
+      idx++;
     }
   }, 800);
-  
+
   try {
     let response;
-    
     if (currentTab === 'file' && selectedFile) {
-      const formData = new FormData();
-      formData.append('file', selectedFile);
-      response = await fetch('/api/analyze', { method: 'POST', body: formData });
+      const fd = new FormData();
+      fd.append('file', selectedFile);
+      if (currentUser) fd.append('user_info', JSON.stringify(currentUser));
+      response = await fetch('/api/analyze', { method: 'POST', body: fd });
     } else if (currentTab === 'text') {
       const text = document.getElementById('headerText').value.trim();
       if (!text) { alert('헤더 텍스트를 입력해 주세요.'); return; }
-      const formData = new FormData();
-      formData.append('text', text);
-      response = await fetch('/api/analyze', { method: 'POST', body: formData });
+      const fd = new FormData();
+      fd.append('text', text);
+      if (currentUser) fd.append('user_info', JSON.stringify(currentUser));
+      response = await fetch('/api/analyze', { method: 'POST', body: fd });
     } else {
-      alert('분석할 파일이나 텍스트를 입력해 주세요.');
+      alert('파일을 선택하거나 헤더를 입력해 주세요.');
       return;
     }
-    
-    clearInterval(stepTimer);
-    steps.forEach(s => document.getElementById(s).className = 'loading-step done');
-    
+
+    clearInterval(timer);
+    steps.forEach(s => { document.getElementById(s).className = 'loading-step done'; });
+
     const data = await response.json();
-    analysisData = data;
-    
-    if (!response.ok || data.error) {
-      showError(data.error || '분석 실패');
-      return;
-    }
-    
+    if (!response.ok || data.error) { showError(data.error || '분석 실패'); return; }
     renderResults(data);
-    
+
   } catch(e) {
-    clearInterval(stepTimer);
+    clearInterval(timer);
     showError('서버 연결 오류: ' + e.message);
   } finally {
     document.getElementById('analyzeBtn').disabled = false;
@@ -615,33 +1286,33 @@ async function analyze() {
   }
 }
 
-// ============================================================
+// =============================================================
 // 오류 표시
-// ============================================================
+// =============================================================
 function showError(msg) {
   const r = document.getElementById('results');
   r.style.display = 'block';
   r.innerHTML = `<div class="error-box">⚠️ ${escHtml(msg)}</div>`;
 }
 
-// ============================================================
+// =============================================================
 // 결과 렌더링
-// ============================================================
+// =============================================================
 function renderResults(data) {
   const analysis = data.analysis;
   const emailData = data.email_data;
   const dnsResults = data.dns_results;
-  const summary = analysis.summary;
-  const verdict = analysis.verdict;
-  
-  let html = '';
-  
-  // ── 1. 판정 배너 ──
-  const scoreColor = verdict.verdict === 'SAFE' ? 'var(--green)'
-    : verdict.verdict === 'WARNING' ? 'var(--yellow)'
+  const summary  = analysis.summary;
+  const verdict  = analysis.verdict;
+
+  const scoreColor = verdict.verdict === 'SAFE'    ? 'var(--green)'
+    : verdict.verdict === 'WARNING'    ? 'var(--yellow)'
     : verdict.verdict === 'SUSPICIOUS' ? 'var(--orange)'
     : 'var(--red)';
-  
+
+  let html = '';
+
+  // ── 판정 배너 ──
   html += `<div class="verdict-banner ${verdict.verdict}">
     <div class="verdict-icon">${verdict.icon}</div>
     <div class="verdict-info">
@@ -652,6 +1323,7 @@ function renderResults(data) {
         도메인 ${summary.total_domains_analyzed}개 &nbsp;|&nbsp;
         IP ${summary.total_ips_analyzed}개 &nbsp;|&nbsp;
         경유 서버 ${summary.hop_count}개
+        ${currentUser ? ` &nbsp;|&nbsp; 분석자: <strong>${escHtml(currentUser.name)}</strong> (${escHtml(currentUser.company)})` : ''}
       </div>
     </div>
     <div class="score-box">
@@ -662,519 +1334,275 @@ function renderResults(data) {
       </div>
     </div>
   </div>`;
-  
-  // ── 2. 요약 카드 ──
+
+  // ── 요약 카드 ──
   html += `<div class="summary-cards">`;
-  html += summaryCard('발신자 (From)', escHtml(summary.from || '-'));
-  html += summaryCard('발신 도메인', `<span class="mono" style="color:var(--blue)">${escHtml(summary.from_domain || '-')}</span>`);
-  html += summaryCard('제목 (Subject)', escHtml(summary.subject || '-'));
-  html += summaryCard('날짜', escHtml(summary.date || '-'));
-  html += summaryCard('SPF', spfBadge(analysis.authentication.spf.status));
-  html += summaryCard('DKIM', dkimBadge(analysis.authentication.dkim.status));
-  html += summaryCard('DMARC', dmarcBadge(analysis.authentication.dmarc.status));
-  html += summaryCard('경유 서버 수', `<span style="font-size:18px;font-weight:700">${summary.hop_count}</span>`);
+  html += sCard('발신자 (From)', escHtml(summary.from || '-'));
+  html += sCard('발신 도메인',   `<span class="mono" style="color:var(--blue)">${escHtml(summary.from_domain || '-')}</span>`);
+  html += sCard('제목',          escHtml(summary.subject || '-'));
+  html += sCard('날짜',          escHtml(summary.date || '-'));
+  html += sCard('SPF',   spfBadge(analysis.authentication.spf.status));
+  html += sCard('DKIM',  dkimBadge(analysis.authentication.dkim.status));
+  html += sCard('DMARC', dmarcBadge(analysis.authentication.dmarc.status));
+  html += sCard('경유 서버',     `<span style="font-size:18px;font-weight:700">${summary.hop_count}</span>`);
   html += `</div>`;
-  
-  // ── 3. 인증 결과 섹션 ──
+
+  // ── 섹션들 ──
   html += section('🔐 이메일 인증 결과 (SPF / DKIM / DMARC)', renderAuthSection(analysis.authentication), false);
-  
-  // ── 4. 위험/신뢰 요인 ──
   html += section('⚖️ 분석 요인 및 점수 배분', renderFactorsSection(analysis), false);
-  
-  // ── 5. 도메인 DNS 분석 ──
-  html += section('🌐 도메인별 DNS 조회 결과', renderDomainSection(analysis.domain_analysis, dnsResults), false);
-  
-  // ── 6. 발신 IP 분석 ──
-  html += section('🖥️ 발신 IP 분석', renderIPSection(analysis.ip_analysis, dnsResults), false);
-  
-  // ── 7. 발신 경로 (Received) ──
+  html += section('🌐 도메인별 DNS 조회 결과', renderDomainSection(analysis.domain_analysis), false);
+  html += section('🖥️ 발신 IP 분석', renderIPSection(analysis.ip_analysis), false);
   html += section('📬 발신 경로 (Received 헤더)', renderRoutingSection(emailData, analysis.routing), false);
-  
-  // ── 8. 도메인 일관성 ──
   html += section('🔗 도메인 일관성 검사', renderConsistencySection(analysis.consistency), false);
-  
-  // ── 9. 원본 헤더 ──
   html += section('📄 원본 이메일 헤더', renderRawHeader(emailData), true);
-  
+
   const r = document.getElementById('results');
   r.style.display = 'block';
   r.innerHTML = html;
 }
 
-function summaryCard(label, value) {
+function sCard(label, value) {
   return `<div class="summary-card"><div class="label">${label}</div><div class="value">${value}</div></div>`;
 }
 
-// ============================================================
-// 배지 생성
-// ============================================================
-function spfBadge(status) {
-  const map = {
-    'pass':     ['badge-green', '✅ PASS'],
-    'fail':     ['badge-red',   '❌ FAIL'],
-    'softfail': ['badge-yellow','⚠️ SOFTFAIL'],
-    'neutral':  ['badge-gray',  '❓ NEUTRAL'],
-    'none':     ['badge-gray',  '— 없음'],
-    'dns_only': ['badge-blue',  '📋 DNS만'],
-    'error':    ['badge-orange','⚠️ ERROR'],
-  };
-  const [cls, text] = map[status] || ['badge-gray', `— ${status}`];
-  return `<span class="badge ${cls}">${text}</span>`;
+// ── 배지 ──
+function spfBadge(s) {
+  const m = { pass:['badge-green','✅ PASS'], fail:['badge-red','❌ FAIL'], softfail:['badge-yellow','⚠️ SOFTFAIL'],
+    neutral:['badge-gray','❓ NEUTRAL'], none:['badge-gray','— 없음'], dns_only:['badge-blue','📋 DNS만'], error:['badge-orange','⚠️ ERROR'] };
+  const [c,t] = m[s]||['badge-gray',`— ${s}`];
+  return `<span class="badge ${c}">${t}</span>`;
 }
-function dkimBadge(status) {
-  const map = {
-    'pass':          ['badge-green', '✅ PASS'],
-    'fail':          ['badge-red',   '❌ FAIL'],
-    'none':          ['badge-gray',  '— 없음'],
-    'dns_key_exists':['badge-blue',  '📋 키확인'],
-    'no_dns_key':    ['badge-orange','⚠️ 키없음'],
-    'error':         ['badge-orange','⚠️ ERROR'],
-  };
-  const [cls, text] = map[status] || ['badge-gray', `— ${status}`];
-  return `<span class="badge ${cls}">${text}</span>`;
+function dkimBadge(s) {
+  const m = { pass:['badge-green','✅ PASS'], fail:['badge-red','❌ FAIL'], none:['badge-gray','— 없음'],
+    dns_key_exists:['badge-blue','📋 키확인'], no_dns_key:['badge-orange','⚠️ 키없음'], error:['badge-orange','⚠️ ERROR'] };
+  const [c,t] = m[s]||['badge-gray',`— ${s}`];
+  return `<span class="badge ${c}">${t}</span>`;
 }
-function dmarcBadge(status) {
-  const map = {
-    'pass':     ['badge-green', '✅ PASS'],
-    'fail':     ['badge-red',   '❌ FAIL'],
-    'none':     ['badge-gray',  '— 없음'],
-    'dns_only': ['badge-blue',  '📋 DNS만'],
-  };
-  const [cls, text] = map[status] || ['badge-gray', `— ${status}`];
-  return `<span class="badge ${cls}">${text}</span>`;
+function dmarcBadge(s) {
+  const m = { pass:['badge-green','✅ PASS'], fail:['badge-red','❌ FAIL'], none:['badge-gray','— 없음'], dns_only:['badge-blue','📋 DNS만'] };
+  const [c,t] = m[s]||['badge-gray',`— ${s}`];
+  return `<span class="badge ${c}">${t}</span>`;
 }
 
-// ============================================================
-// 인증 섹션
-// ============================================================
+// ── 인증 섹션 ──
 function renderAuthSection(auth) {
-  const spf = auth.spf;
-  const dkim = auth.dkim;
-  const dmarc = auth.dmarc;
-  
-  function authClass(status) {
-    if (['pass','dns_key_exists','dns_only'].includes(status)) return 'pass';
-    if (['fail'].includes(status)) return 'fail';
-    if (['softfail','no_dns_key','error'].includes(status)) return 'warning';
-    return 'none';
-  }
-  
-  let html = `<div class="auth-grid">`;
-  
-  // SPF
-  html += `<div class="auth-card ${authClass(spf.status)}">
+  const spf=auth.spf, dkim=auth.dkim, dmarc=auth.dmarc;
+  function ac(s){ return ['pass','dns_key_exists','dns_only'].includes(s)?'pass':s==='fail'?'fail':['softfail','no_dns_key','error'].includes(s)?'warning':'none'; }
+  let html=`<div class="auth-grid">`;
+
+  html+=`<div class="auth-card ${ac(spf.status)}">
     <div class="auth-type">SPF (Sender Policy Framework)</div>
     <div class="auth-status">${spfBadge(spf.status)}</div>
     <div class="auth-detail">${escHtml(spf.detail)}</div>`;
-  if (spf.dns_record && spf.dns_record.parsed) {
-    const sp = spf.dns_record.parsed;
-    html += `<hr class="divider">
-    <div style="font-size:11px;color:var(--text3)">SPF 레코드:</div>
-    <div class="spf-mech">`;
-    for (const m of (sp.mechanisms || [])) {
-      const tag = m.type === 'all'
-        ? (sp.all_policy === 'fail' ? 'all' : sp.all_policy === 'pass' ? 'all pass' : 'all')
-        : m.type;
-      html += `<span class="spf-tag ${tag}">${escHtml(m.type)}${m.value ? ':'+escHtml(m.value) : ''}</span>`;
-    }
-    html += `</div>`;
-    html += `<div style="font-size:10px;color:var(--text3);margin-top:6px">
-      정책: ${sp.all_policy || '없음'}</div>`;
+  if(spf.dns_record&&spf.dns_record.parsed){
+    const sp=spf.dns_record.parsed;
+    html+=`<hr class="divider"><div style="font-size:11px;color:var(--text3)">SPF 레코드:</div><div class="spf-mech">`;
+    for(const m of(sp.mechanisms||[])){ html+=`<span class="spf-tag ${m.type}">${escHtml(m.type)}${m.value?':'+escHtml(m.value):''}</span>`; }
+    html+=`</div><div style="font-size:10px;color:var(--text3);margin-top:5px">정책: ${sp.all_policy||'없음'}</div>`;
   }
-  if (spf.from_header && spf.from_header.ip) {
-    html += `<div style="font-size:10px;color:var(--text3);margin-top:4px">
-      발신 IP: <span class="mono">${escHtml(spf.from_header.ip)}</span></div>`;
-  }
-  html += `</div>`;
-  
-  // DKIM
-  html += `<div class="auth-card ${authClass(dkim.status)}">
+  html+=`</div>`;
+
+  html+=`<div class="auth-card ${ac(dkim.status)}">
     <div class="auth-type">DKIM (DomainKeys Identified Mail)</div>
     <div class="auth-status">${dkimBadge(dkim.status)}</div>
     <div class="auth-detail">${escHtml(dkim.detail)}</div>`;
-  for (const sig of (dkim.dns_records || [])) {
-    html += `<hr class="divider">
-    <div style="font-size:11px">
-      <span class="mono" style="color:var(--blue)">${escHtml(sig.domain || '')}</span>
-      <span class="text3"> / selector: </span>
-      <span class="mono">${escHtml(sig.selector || '')}</span>
-    </div>
-    <div style="font-size:10px;color:var(--text3);margin-top:4px">
-      DNS 공개키: ${sig.has_dns_key
-        ? `<span style="color:var(--green)">✅ 확인됨</span>`
-        : `<span style="color:var(--red)">❌ 없음</span>`}
-    </div>`;
+  for(const sig of(dkim.dns_records||[])){
+    html+=`<hr class="divider"><div style="font-size:11px"><span class="mono" style="color:var(--blue)">${escHtml(sig.domain||'')}</span>
+    <span style="color:var(--text3)"> / selector: </span><span class="mono">${escHtml(sig.selector||'')}</span></div>
+    <div style="font-size:10px;color:var(--text3);margin-top:3px">DNS 공개키: ${sig.has_dns_key?'<span style="color:var(--green)">✅ 확인됨</span>':'<span style="color:var(--red)">❌ 없음</span>'}</div>`;
   }
-  html += `</div>`;
-  
-  // DMARC
-  html += `<div class="auth-card ${authClass(dmarc.status)}">
+  html+=`</div>`;
+
+  html+=`<div class="auth-card ${ac(dmarc.status)}">
     <div class="auth-type">DMARC</div>
     <div class="auth-status">${dmarcBadge(dmarc.status)}</div>
     <div class="auth-detail">${escHtml(dmarc.detail)}</div>`;
-  if (dmarc.dns_record && dmarc.dns_record.parsed) {
-    const dp = dmarc.dns_record.parsed;
-    html += `<hr class="divider">
-    <div style="font-size:11px;color:var(--text3)">DMARC 정책:</div>
-    <div style="font-size:11px;margin-top:4px">
-      <span class="badge ${dp.policy === 'reject' ? 'badge-red' : dp.policy === 'quarantine' ? 'badge-yellow' : 'badge-gray'}">
-        p=${escHtml(dp.policy || 'none')}</span>
-      ${dp.pct !== undefined ? `<span class="badge badge-gray" style="margin-left:4px">pct=${dp.pct}%</span>` : ''}
+  if(dmarc.dns_record&&dmarc.dns_record.parsed){
+    const dp=dmarc.dns_record.parsed;
+    html+=`<hr class="divider"><div style="font-size:11px;color:var(--text3)">DMARC 정책:</div>
+    <div style="margin-top:4px"><span class="badge ${dp.policy==='reject'?'badge-red':dp.policy==='quarantine'?'badge-yellow':'badge-gray'}">p=${escHtml(dp.policy||'none')}</span>
+    ${dp.pct!==undefined?`<span class="badge badge-gray" style="margin-left:4px">pct=${dp.pct}%</span>`:''}
     </div>`;
-    if (dp.rua) html += `<div style="font-size:10px;color:var(--text3);margin-top:4px">보고서: ${escHtml(dp.rua)}</div>`;
   }
-  html += `</div>`;
-  
-  html += `</div>`;
+  html+=`</div></div>`;
   return html;
 }
 
-// ============================================================
-// 위험/신뢰 요인 섹션
-// ============================================================
+// ── 요인 섹션 ──
 function renderFactorsSection(analysis) {
-  const score = analysis.score_breakdown;
-  const risks = analysis.risk_factors;
-  const trusts = analysis.trust_factors;
-  
-  const keyLabel = {
-    'spf_pass': 'SPF 인증 통과',
-    'spf_fail': 'SPF 인증 실패',
-    'spf_softfail': 'SPF 소프트 실패',
-    'spf_none': 'SPF 레코드 없음',
-    'dkim_pass': 'DKIM 서명 검증 통과',
-    'dkim_fail': 'DKIM 서명 검증 실패',
-    'dkim_none': 'DKIM 서명 없음',
-    'dmarc_pass': 'DMARC 정책 통과',
-    'dmarc_fail': 'DMARC 정책 실패',
-    'dmarc_none': 'DMARC 레코드 없음',
-    'from_domain_exists': '발신 도메인 DNS 확인됨',
-    'from_domain_no_mx': '발신 도메인 MX 레코드 없음',
-    'from_domain_no_dns': '발신 도메인 DNS 레코드 없음',
-    'ptr_exists': 'PTR(역방향 DNS) 레코드 확인됨',
-    'ptr_no_exists': 'PTR 레코드 없음',
-    'ptr_fcrdns': 'FCrDNS 검증 통과',
-    'reply_to_mismatch': 'Reply-To 도메인 불일치',
-    'return_path_mismatch': 'Return-Path 도메인 불일치',
-    'msgid_domain_mismatch': 'Message-ID 도메인 불일치',
-    'private_ip_sending': '사설 IP에서 발송',
-    'no_received_headers': 'Received 헤더 없음',
-    'suspicious_header': '의심스러운 헤더 발견',
-    'from_display_mismatch': 'From 표시명 불일치',
+  const s=analysis.score_breakdown, risks=analysis.risk_factors, trusts=analysis.trust_factors;
+  const KL = {
+    spf_pass:'SPF 인증 통과', spf_fail:'SPF 인증 실패', spf_softfail:'SPF 소프트 실패', spf_none:'SPF 레코드 없음',
+    dkim_pass:'DKIM 서명 검증 통과', dkim_fail:'DKIM 검증 실패', dkim_none:'DKIM 서명 없음',
+    dmarc_pass:'DMARC 정책 통과', dmarc_fail:'DMARC 실패', dmarc_none:'DMARC 없음',
+    from_domain_exists:'발신 도메인 DNS 확인됨', from_domain_no_mx:'MX 레코드 없음',
+    from_domain_no_dns:'발신 도메인 DNS 없음', ptr_exists:'PTR 레코드 확인',
+    ptr_no_exists:'PTR 레코드 없음', ptr_fcrdns:'FCrDNS 검증 통과',
+    reply_to_mismatch:'Reply-To 도메인 불일치', return_path_mismatch:'Return-Path 불일치',
+    msgid_domain_mismatch:'Message-ID 도메인 불일치', private_ip_sending:'사설 IP 발송',
+    no_received_headers:'Received 헤더 없음'
   };
-  
-  let html = `<div class="factors-grid">`;
-  
-  // 위험 요인
-  html += `<div>
-    <div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:8px">
-      🚨 위험 요인 (${risks.length}개)</div>
-    <ul class="factor-list">`;
-  if (risks.length === 0) {
-    html += `<li class="empty-msg">위험 요인 없음</li>`;
-  } else {
-    for (const r of risks) {
-      html += `<li class="factor-item">
-        <span class="factor-delta neg">${r.delta}</span>
-        <span>${keyLabel[r.key] || escHtml(r.key)}</span>
-      </li>`;
-    }
-  }
-  html += `</ul></div>`;
-  
-  // 신뢰 요인
-  html += `<div>
-    <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:8px">
-      ✅ 신뢰 요인 (${trusts.length}개)</div>
-    <ul class="factor-list">`;
-  if (trusts.length === 0) {
-    html += `<li class="empty-msg">신뢰 요인 없음</li>`;
-  } else {
-    for (const t of trusts) {
-      html += `<li class="factor-item">
-        <span class="factor-delta pos">+${t.delta}</span>
-        <span>${keyLabel[t.key] || escHtml(t.key)}</span>
-      </li>`;
-    }
-  }
-  html += `</ul></div>`;
-  
-  html += `</div>`;
-  
-  // 점수 분해
-  html += `<div style="margin-top:14px;padding:12px;background:var(--bg3);border-radius:var(--radius);font-size:12px">
-    <span style="color:var(--text2)">기준 점수: <strong>50</strong></span>
-    ${score.bonuses.length ? ` &nbsp;|&nbsp; <span style="color:var(--green)">가점: +${score.bonuses.reduce((a,b)=>a+b.delta,0)}</span>` : ''}
-    ${score.deductions.length ? ` &nbsp;|&nbsp; <span style="color:var(--red)">감점: ${score.deductions.reduce((a,b)=>a+b.delta,0)}</span>` : ''}
-    &nbsp;|&nbsp; <strong>최종: ${score.final}점</strong>
+  let html=`<div class="factors-grid">`;
+  html+=`<div><div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:8px">🚨 위험 요인 (${risks.length}개)</div><ul class="factor-list">`;
+  if(!risks.length) html+=`<li class="empty-msg">위험 요인 없음</li>`;
+  else risks.forEach(r=>{ html+=`<li class="factor-item"><span class="factor-delta neg">${r.delta}</span><span>${KL[r.key]||escHtml(r.key)}</span></li>`; });
+  html+=`</ul></div>`;
+  html+=`<div><div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:8px">✅ 신뢰 요인 (${trusts.length}개)</div><ul class="factor-list">`;
+  if(!trusts.length) html+=`<li class="empty-msg">신뢰 요인 없음</li>`;
+  else trusts.forEach(t=>{ html+=`<li class="factor-item"><span class="factor-delta pos">+${t.delta}</span><span>${KL[t.key]||escHtml(t.key)}</span></li>`; });
+  html+=`</ul></div></div>`;
+  html+=`<div style="margin-top:12px;padding:11px 14px;background:var(--bg3);border-radius:var(--radius);font-size:12px">
+    기준점: <strong>50</strong>
+    ${s.bonuses.length?` &nbsp;+&nbsp; <span style="color:var(--green)">가점 +${s.bonuses.reduce((a,b)=>a+b.delta,0)}</span>`:''}
+    ${s.deductions.length?` &nbsp;+&nbsp; <span style="color:var(--red)">감점 ${s.deductions.reduce((a,b)=>a+b.delta,0)}</span>`:''}
+    &nbsp;= <strong>최종 ${s.final}점</strong>
   </div>`;
-  
   return html;
 }
 
-// ============================================================
-// 도메인 DNS 분석 섹션
-// ============================================================
-function renderDomainSection(domainAnalysis, dnsResults) {
+// ── 도메인 섹션 ──
+function renderDomainSection(domainAnalysis) {
   const domains = Object.values(domainAnalysis);
-  if (!domains.length) return `<div class="empty-msg">분석된 도메인 없음</div>`;
-  
-  let html = `<table class="domain-table">
-    <thead><tr>
-      <th>도메인</th><th>역할</th><th>A</th><th>MX</th><th>SPF</th><th>DMARC</th>
-      <th>상태</th><th>비고</th>
-    </tr></thead><tbody>`;
-  
-  for (const da of domains) {
-    const existIcon = da.dns_exists
-      ? `<span style="color:var(--green)">✅</span>`
-      : `<span style="color:var(--red)">❌</span>`;
-    const checkMark = v => v
-      ? `<span class="check-icon" style="color:var(--green)">✅</span>`
-      : `<span class="check-icon" style="color:var(--text3)">—</span>`;
-    
-    // 이슈 중 가장 심각한 severity
-    const maxSev = da.issues.length === 0 ? 'ok'
-      : da.issues.some(i=>i.severity==='critical') ? 'critical'
-      : da.issues.some(i=>i.severity==='high') ? 'high'
-      : da.issues.some(i=>i.severity==='medium') ? 'medium' : 'low';
-    
-    const statusBadge = maxSev === 'ok' ? `<span class="badge badge-green">정상</span>`
-      : maxSev === 'critical' ? `<span class="badge badge-red">위험</span>`
-      : maxSev === 'high' ? `<span class="badge badge-red">불량</span>`
-      : maxSev === 'medium' ? `<span class="badge badge-yellow">주의</span>`
-      : `<span class="badge badge-blue">정보</span>`;
-    
-    // A 레코드 값
-    const aRecs = da.a_records.length ? da.a_records.slice(0,2).join(', ') : '';
-    // MX 레코드 값
-    const mxRecs = da.mx_records.length
-      ? da.mx_records.slice(0,2).map(m => typeof m === 'object' ? m.exchange : m).join(', ')
-      : '';
-    
-    // 이슈 표시
-    const issueHtml = da.issues.map(i =>
-      `<div class="issue-box ${i.severity}" style="margin-top:4px">
-        <span>${i.message}</span></div>`
-    ).join('');
-    
-    html += `<tr>
-      <td>
-        <div class="domain-name">${escHtml(da.domain)}</div>
-        ${da.a_records.length ? `<div class="record-list">${da.a_records.slice(0,3).map(ip=>`<span class="record-tag">${escHtml(ip)}</span>`).join('')}</div>` : ''}
-      </td>
+  if(!domains.length) return `<div class="empty-msg">분석된 도메인 없음</div>`;
+  let html=`<table class="domain-table"><thead><tr><th>도메인</th><th>역할</th><th>A</th><th>MX</th><th>SPF</th><th>DMARC</th><th>상태</th><th>이슈</th></tr></thead><tbody>`;
+  for(const da of domains){
+    const ms = !da.dns_exists?'critical':da.issues.some(i=>i.severity==='high')?'high':da.issues.some(i=>i.severity==='medium')?'medium':'ok';
+    const sb = ms==='ok'?`<span class="badge badge-green">정상</span>`:ms==='critical'||ms==='high'?`<span class="badge badge-red">불량</span>`:`<span class="badge badge-yellow">주의</span>`;
+    const aRec = da.a_records.slice(0,2).join(', ');
+    const mxRec = da.mx_records.slice(0,2).map(m=>typeof m==='object'?m.exchange:m).join(', ');
+    html+=`<tr>
+      <td><div class="domain-name">${escHtml(da.domain)}</div>${da.a_records.length?`<div class="record-list">${da.a_records.slice(0,3).map(ip=>`<span class="record-tag">${escHtml(ip)}</span>`).join('')}</div>`:''}</td>
       <td>${da.role.map(r=>`<div style="font-size:11px;color:var(--text2)">${escHtml(r)}</div>`).join('')}</td>
-      <td>${da.has_a ? `<span style="color:var(--green)">✅</span><div style="font-size:10px;color:var(--text3)">${escHtml(aRecs)}</div>` : `<span style="color:var(--text3)">—</span>`}</td>
-      <td>${da.has_mx ? `<span style="color:var(--green)">✅</span><div style="font-size:10px;color:var(--text3)">${escHtml(mxRecs)}</div>` : `<span style="color:var(--text3)">—</span>`}</td>
-      <td>${da.has_spf
-        ? `<span style="color:var(--green)">✅</span>
-           <div style="font-size:10px;color:var(--text3)">${da.spf_record ? escHtml((da.spf_record.parsed||{}).all_policy||'') : ''}</div>`
-        : `<span style="color:var(--red)">❌</span>`}</td>
-      <td>${da.has_dmarc
-        ? `<span style="color:var(--green)">✅</span>
-           <div style="font-size:10px;color:var(--text3)">${da.dmarc_record ? escHtml((da.dmarc_record.parsed||{}).policy||'') : ''}</div>`
-        : `<span style="color:var(--text3)">—</span>`}</td>
-      <td>${statusBadge}</td>
-      <td>${issueHtml}
-        ${da.ns_records && da.ns_records.length ? `<div style="font-size:10px;color:var(--text3);margin-top:4px">NS: ${escHtml(da.ns_records.slice(0,2).join(', '))}</div>` : ''}
-      </td>
+      <td>${da.has_a?`<span style="color:var(--green)">✅</span><div style="font-size:10px;color:var(--text3)">${escHtml(aRec)}</div>`:`<span style="color:var(--text3)">—</span>`}</td>
+      <td>${da.has_mx?`<span style="color:var(--green)">✅</span><div style="font-size:10px;color:var(--text3)">${escHtml(mxRec)}</div>`:`<span style="color:var(--text3)">—</span>`}</td>
+      <td>${da.has_spf?`<span style="color:var(--green)">✅</span><div style="font-size:10px;color:var(--text3)">${escHtml((da.spf_record?.parsed?.all_policy)||'')}</div>`:`<span style="color:var(--red)">❌</span>`}</td>
+      <td>${da.has_dmarc?`<span style="color:var(--green)">✅</span>`:`<span style="color:var(--text3)">—</span>`}</td>
+      <td>${sb}</td>
+      <td>${da.issues.map(i=>`<div class="issue-box ${i.severity}" style="margin-bottom:4px">${escHtml(i.message)}</div>`).join('')||'<span class="empty-msg">없음</span>'}</td>
     </tr>`;
   }
-  
-  html += `</tbody></table>`;
+  html+=`</tbody></table>`;
   return html;
 }
 
-// ============================================================
-// IP 분석 섹션
-// ============================================================
-function renderIPSection(ipAnalysis, dnsResults) {
-  const ips = Object.values(ipAnalysis);
-  if (!ips.length) return `<div class="empty-msg">분석된 IP 없음</div>`;
-  
-  let html = '';
-  for (const ip of ips) {
-    const typeLabel = ip.is_private
-      ? `<span class="badge badge-orange">사설 IP</span>`
-      : `<span class="badge badge-blue">공인 IP</span>`;
-    
-    const ptrStatus = ip.has_ptr
-      ? `<span style="color:var(--green)">✅ ${escHtml(ip.ptr_hostname || '')}</span>`
-      : ip.is_private ? `<span style="color:var(--text3)">— (사설 IP)</span>`
-      : `<span style="color:var(--red)">❌ PTR 없음</span>`;
-    
-    const fcrdns = ip.ptr_fcrdns
-      ? `<span style="color:var(--green)">✅ FCrDNS 일치</span>`
-      : ip.has_ptr ? `<span style="color:var(--yellow)">⚠️ FCrDNS 불일치</span>` : '';
-    
-    const spfStatus = ip.is_in_spf
-      ? `<span style="color:var(--green)">✅ SPF에 포함됨</span>`
-      : `<span style="color:var(--text3)">— 미확인</span>`;
-    
-    html += `<div class="ip-card">
+// ── IP 섹션 ──
+function renderIPSection(ipAnalysis) {
+  const ips=Object.values(ipAnalysis);
+  if(!ips.length) return `<div class="empty-msg">분석된 IP 없음</div>`;
+  let html='';
+  for(const ip of ips){
+    const tl = ip.is_private?`<span class="badge badge-orange">사설 IP</span>`:`<span class="badge badge-blue">공인 IP</span>`;
+    const ptr = ip.has_ptr?`<span style="color:var(--green)">✅ ${escHtml(ip.ptr_hostname||'')}</span>`:ip.is_private?`<span style="color:var(--text3)">— (사설 IP)</span>`:`<span style="color:var(--red)">❌ PTR 없음</span>`;
+    const fcr = ip.ptr_fcrdns?`<span style="color:var(--green)">✅ 일치</span>`:ip.has_ptr?`<span style="color:var(--yellow)">⚠️ 불일치</span>`:'—';
+    const spf = ip.is_in_spf?`<span style="color:var(--green)">✅ 포함됨</span>`:`<span style="color:var(--text3)">— 미확인</span>`;
+    html+=`<div class="ip-card">
       <div class="ip-header">
-        <span class="ip-addr">${escHtml(ip.ip)}</span>
-        ${typeLabel}
+        <span class="ip-addr">${escHtml(ip.ip)}</span>${tl}
         ${(ip.role||[]).map(r=>`<span class="badge badge-gray">${escHtml(r)}</span>`).join('')}
       </div>
       <div class="ip-details">
-        <div class="ip-detail-item"><strong>PTR 레코드:</strong> ${ptrStatus}</div>
-        <div class="ip-detail-item"><strong>FCrDNS 검증:</strong> ${fcrdns || '— 해당없음'}</div>
-        <div class="ip-detail-item"><strong>SPF 포함 여부:</strong> ${spfStatus}</div>
-        ${ip.is_private ? `<div class="ip-detail-item" style="color:var(--orange)">⚠️ 사설/내부 IP</div>` : ''}
+        <div class="ip-detail-item"><strong>PTR:</strong> ${ptr}</div>
+        <div class="ip-detail-item"><strong>FCrDNS:</strong> ${fcr}</div>
+        <div class="ip-detail-item"><strong>SPF 포함:</strong> ${spf}</div>
       </div>
-      ${ip.notes && ip.notes.length ? `<div style="margin-top:8px">${ip.notes.map(n=>`<div class="issue-box info">${escHtml(n)}</div>`).join('')}</div>` : ''}
-      ${ip.issues && ip.issues.length ? `<div style="margin-top:4px">${ip.issues.map(i=>`<div class="issue-box ${i.severity}">${escHtml(i.message)}</div>`).join('')}</div>` : ''}
+      ${ip.notes?.length?`<div style="margin-top:7px">${ip.notes.map(n=>`<div class="issue-box info">${escHtml(n)}</div>`).join('')}</div>`:''}
+      ${ip.issues?.length?`<div style="margin-top:4px">${ip.issues.map(i=>`<div class="issue-box ${i.severity}">${escHtml(i.message)}</div>`).join('')}</div>`:''}
     </div>`;
   }
   return html;
 }
 
-// ============================================================
-// 발신 경로 섹션
-// ============================================================
+// ── 발신 경로 ──
 function renderRoutingSection(emailData, routing) {
-  const hops = routing.hops || [];
-  if (!hops.length) {
-    return `<div class="empty-msg">Received 헤더 없음 — 발신 경로 추적 불가</div>`;
-  }
-  
-  let html = `<div style="font-size:12px;color:var(--text2);margin-bottom:12px">
-    총 ${hops.length}개 서버를 경유 (아래에서 위로: 발신 → 수신)
-  </div><div class="hop-list">`;
-  
-  // 역순으로 표시 (발신 → 수신)
-  const reversed = [...hops].reverse();
-  
-  for (let i = 0; i < reversed.length; i++) {
-    const hop = reversed[i];
-    const isFirst = (i === 0);
-    const isLast  = (i === reversed.length - 1);
-    const dotClass = isFirst ? 'hop-dot first' : isLast ? 'hop-dot last' : 'hop-dot';
-    const label = isFirst ? '🟢 최초 발신 서버' : isLast ? '🔵 최종 수신 서버' : `📡 경유 서버 #${i}`;
-    
-    html += `<div class="hop-item">
-      <div class="hop-line">
-        <div class="${dotClass}"></div>
-        ${!isLast ? '<div class="hop-connector"></div>' : ''}
-      </div>
+  const hops=routing.hops||[];
+  if(!hops.length) return `<div class="empty-msg">Received 헤더 없음 — 발신 경로 추적 불가</div>`;
+  let html=`<div style="font-size:12px;color:var(--text2);margin-bottom:12px">총 ${hops.length}개 서버 경유 (아래→위: 발신→수신)</div>`;
+  const rev=[...hops].reverse();
+  for(let i=0;i<rev.length;i++){
+    const hop=rev[i], isF=(i===0), isL=(i===rev.length-1);
+    const dc=isF?'hop-dot first':isL?'hop-dot last':'hop-dot';
+    const lb=isF?'🟢 최초 발신 서버':isL?'🔵 최종 수신 서버':`📡 경유 서버 #${i}`;
+    html+=`<div class="hop-item">
+      <div class="hop-line"><div class="${dc}"></div>${!isL?'<div class="hop-connector"></div>':''}</div>
       <div class="hop-content">
-        <div class="hop-label">${label}</div>
-        <div class="hop-from">${escHtml(hop.from_host || '알 수 없음')}</div>
-        <div class="hop-meta">
-          ${hop.by_host ? `→ <strong>by</strong> ${escHtml(hop.by_host)}` : ''}
-          ${hop.timestamp ? ` &nbsp;|&nbsp; 🕐 ${escHtml(hop.timestamp)}` : ''}
-        </div>
-        ${hop.ips && hop.ips.length ? `<div class="hop-ips">${hop.ips.map(ip=>`<span class="hop-ip-tag">${escHtml(ip)}</span>`).join('')}</div>` : ''}
+        <div class="hop-label">${lb}</div>
+        <div class="hop-from">${escHtml(hop.from_host||'알 수 없음')}</div>
+        <div class="hop-meta">${hop.by_host?`→ <strong>by</strong> ${escHtml(hop.by_host)}`:''}${hop.timestamp?` &nbsp;|&nbsp; 🕐 ${escHtml(hop.timestamp)}`:''}</div>
+        ${hop.ips?.length?`<div class="hop-ips">${hop.ips.map(ip=>`<span class="hop-ip-tag">${escHtml(ip)}</span>`).join('')}</div>`:''}
       </div>
     </div>`;
   }
-  
-  html += `</div>`;
   return html;
 }
 
-// ============================================================
-// 일관성 검사 섹션
-// ============================================================
-function renderConsistencySection(consistency) {
-  let html = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-bottom:12px">`;
-  
-  function infoRow(label, value, highlight) {
-    return `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:10px 12px">
-      <div style="font-size:10px;color:var(--text3)">${label}</div>
-      <div style="font-size:13px;font-family:monospace;color:${highlight||'var(--text)'};margin-top:2px">${escHtml(value || '—')}</div>
-    </div>`;
-  }
-  
-  html += infoRow('From 도메인', consistency.from_domain, 'var(--blue)');
-  html += infoRow('Reply-To 도메인', consistency.reply_to_domain,
-    (consistency.reply_to_domain && consistency.reply_to_domain !== consistency.from_domain) ? 'var(--red)' : 'var(--text)');
-  html += infoRow('Return-Path 도메인', consistency.return_path_domain,
-    (consistency.return_path_domain && consistency.return_path_domain !== consistency.from_domain) ? 'var(--yellow)' : 'var(--text)');
-  html += infoRow('Message-ID 도메인', consistency.message_id_domain);
-  html += `</div>`;
-  
-  if (consistency.issues && consistency.issues.length) {
-    for (const issue of consistency.issues) {
-      html += `<div class="issue-box ${issue.severity}">
-        ⚠️ ${escHtml(issue.message)}</div>`;
-    }
-  } else {
-    html += `<div class="issue-box info">✅ 도메인 일관성 이상 없음</div>`;
-  }
-  
-  // DKIM 도메인 목록
-  if (consistency.dkim_domains && consistency.dkim_domains.length) {
-    html += `<div style="margin-top:10px;font-size:12px;color:var(--text2)">
-      DKIM 서명 도메인: ${consistency.dkim_domains.map(d=>`<span class="mono" style="color:var(--blue)">${escHtml(d)}</span>`).join(', ')}
-    </div>`;
-  }
-  
+// ── 일관성 ──
+function renderConsistencySection(c) {
+  function irow(label,value,hi){ return `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:10px 12px"><div style="font-size:10px;color:var(--text3)">${label}</div><div style="font-size:13px;font-family:monospace;color:${hi||'var(--text)'};margin-top:2px">${escHtml(value||'—')}</div></div>`; }
+  let html=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:12px">`;
+  html+=irow('From 도메인',c.from_domain,'var(--blue)');
+  html+=irow('Reply-To 도메인',c.reply_to_domain,(c.reply_to_domain&&c.reply_to_domain!==c.from_domain)?'var(--red)':undefined);
+  html+=irow('Return-Path 도메인',c.return_path_domain,(c.return_path_domain&&c.return_path_domain!==c.from_domain)?'var(--yellow)':undefined);
+  html+=irow('Message-ID 도메인',c.message_id_domain);
+  html+=`</div>`;
+  if(c.issues?.length) c.issues.forEach(i=>{ html+=`<div class="issue-box ${i.severity}">⚠️ ${escHtml(i.message)}</div>`; });
+  else html+=`<div class="issue-box info">✅ 도메인 일관성 이상 없음</div>`;
   return html;
 }
 
-// ============================================================
-// 원본 헤더 섹션
-// ============================================================
+// ── 원본 헤더 ──
 function renderRawHeader(emailData) {
-  const raw = emailData.raw_headers || '';
-  const lines = raw.split('\n').slice(0, 80); // 첫 80줄만
-  const highlighted = lines.map(line => {
-    if (line.match(/^From:/i))   return `<span style="color:#79c0ff">${escHtml(line)}</span>`;
-    if (line.match(/^To:/i))     return `<span style="color:#79c0ff">${escHtml(line)}</span>`;
-    if (line.match(/^Subject:/i)) return `<span style="color:#d2a8ff">${escHtml(line)}</span>`;
-    if (line.match(/^Received:/i)) return `<span style="color:#3fb950">${escHtml(line)}</span>`;
-    if (line.match(/^Authentication-Results:/i)) return `<span style="color:#e3b341">${escHtml(line)}</span>`;
-    if (line.match(/^DKIM-Signature:/i)) return `<span style="color:#e3b341">${escHtml(line)}</span>`;
-    if (line.match(/^Received-SPF:/i)) return `<span style="color:#e3b341">${escHtml(line)}</span>`;
-    if (line.match(/^Return-Path:/i)) return `<span style="color:#ffa657">${escHtml(line)}</span>`;
-    if (line.match(/^Reply-To:/i)) return `<span style="color:#ffa657">${escHtml(line)}</span>`;
+  const raw=emailData.raw_headers||'';
+  const lines=raw.split('\n').slice(0,80);
+  const hl=lines.map(line=>{
+    if(/^From:/i.test(line))    return `<span style="color:#79c0ff">${escHtml(line)}</span>`;
+    if(/^To:/i.test(line))      return `<span style="color:#79c0ff">${escHtml(line)}</span>`;
+    if(/^Subject:/i.test(line)) return `<span style="color:#d2a8ff">${escHtml(line)}</span>`;
+    if(/^Received:/i.test(line))return `<span style="color:#3fb950">${escHtml(line)}</span>`;
+    if(/^Authentication-Results:/i.test(line)) return `<span style="color:#e3b341">${escHtml(line)}</span>`;
+    if(/^DKIM-Signature:/i.test(line)) return `<span style="color:#e3b341">${escHtml(line)}</span>`;
+    if(/^Received-SPF:/i.test(line)) return `<span style="color:#e3b341">${escHtml(line)}</span>`;
+    if(/^Return-Path:/i.test(line)) return `<span style="color:#ffa657">${escHtml(line)}</span>`;
+    if(/^Reply-To:/i.test(line)) return `<span style="color:#ffa657">${escHtml(line)}</span>`;
     return `<span style="color:#8b949e">${escHtml(line)}</span>`;
   }).join('\n');
-  
-  return `<pre class="raw-header">${highlighted}</pre>
+  return `<pre class="raw-header">${hl}</pre>
     <div style="font-size:11px;color:var(--text3);margin-top:6px">
-      색상: <span style="color:#79c0ff">■</span> From/To
-      <span style="color:#3fb950">■</span> Received
-      <span style="color:#e3b341">■</span> 인증헤더
-      <span style="color:#ffa657">■</span> Return-Path/Reply-To
+      <span style="color:#79c0ff">■</span> From/To &nbsp;
+      <span style="color:#3fb950">■</span> Received &nbsp;
+      <span style="color:#e3b341">■</span> 인증헤더 &nbsp;
+      <span style="color:#ffa657">■</span> Return-Path/Reply-To &nbsp;
       <span style="color:#d2a8ff">■</span> Subject
     </div>`;
 }
 
-// ============================================================
-// 섹션 컴포넌트
-// ============================================================
+// ── 섹션 컴포넌트 ──
 function section(title, content, collapsed) {
-  const id = 'sec_' + Math.random().toString(36).substr(2,6);
+  const id='sec_'+Math.random().toString(36).substr(2,6);
   return `<div class="section">
     <div class="section-header ${collapsed?'collapsed':''}" onclick="toggleSection('${id}')">
-      <h3>${title}</h3>
-      <span class="chevron">▼</span>
+      <h3>${title}</h3><span class="chevron">▼</span>
     </div>
     <div class="section-body ${collapsed?'collapsed':''}" id="${id}">${content}</div>
   </div>`;
 }
-
 function toggleSection(id) {
-  const body = document.getElementById(id);
-  const header = body.previousElementSibling;
-  body.classList.toggle('collapsed');
-  header.classList.toggle('collapsed');
+  const b=document.getElementById(id);
+  b.classList.toggle('collapsed');
+  b.previousElementSibling.classList.toggle('collapsed');
 }
 
-// ============================================================
-// 유틸
-// ============================================================
-function escHtml(str) {
-  if (!str) return '';
-  return String(str)
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;');
+// ── 유틸 ──
+function escHtml(s) {
+  if(!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+// =============================================================
+// 초기화: 개인정보 섹션 자동 펼침
+// =============================================================
+window.addEventListener('DOMContentLoaded', () => {
+  togglePrivacy();
+});
 </script>
 </body>
 </html>
