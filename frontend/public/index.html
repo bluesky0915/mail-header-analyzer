@@ -401,7 +401,7 @@
           <input type="file" id="fileInput" accept=".eml,.txt,.msg" onchange="onFileChange(event)"/>
           <div class="dz-icon">📧</div>
           <div class="dz-title">EML 파일을 여기에 드래그하거나 클릭하여 선택</div>
-          <div class="dz-hint">.eml · .txt · .msg 지원 | 최대 10MB</div>
+          <div class="dz-hint">.eml · .txt · .msg 지원 | 최대 1MB</div>
           <div class="dz-file-info" id="dzFileInfo"></div>
         </div>
       </div>
@@ -414,7 +414,7 @@
 
       <div class="btn-row">
         <button class="btn btn-primary" id="analyzeBtn" onclick="analyze()">
-          🔍 발신정보 분석 시작
+          🔍 분석 시작
         </button>
         <button class="btn btn-ghost" onclick="resetAnalysis()">초기화</button>
         <span class="sample-link" onclick="loadSample()">샘플 데이터 불러오기</span>
@@ -596,6 +596,12 @@ function onDrop(e) {
 }
 function onFileChange(e) { if (e.target.files.length > 0) setFile(e.target.files[0]); }
 function setFile(file) {
+  const MAX_SIZE = 1 * 1024 * 1024; // 1MB
+  if (file.size > MAX_SIZE) {
+    alert(`파일 크기가 너무 큽니다.\n선택한 파일: ${(file.size/1024).toFixed(1)} KB\n최대 허용 크기: 1MB`);
+    document.getElementById('fileInput').value = '';
+    return;
+  }
   selectedFile = file;
   const el = document.getElementById('dzFileInfo');
   el.textContent = `✅ 선택됨: ${file.name}  (${(file.size/1024).toFixed(1)} KB)`;
@@ -648,6 +654,11 @@ async function analyze() {
     } else if (currentTab === 'text') {
       const text = document.getElementById('headerText').value.trim();
       if (!text) { alert('헤더 텍스트를 입력해 주세요.'); return; }
+      const textSize = new Blob([text]).size;
+      if (textSize > 1 * 1024 * 1024) {
+        alert(`입력된 텍스트가 너무 큽니다.\n현재 크기: ${(textSize/1024).toFixed(1)} KB\n최대 허용 크기: 1MB`);
+        return;
+      }
       const fd = new FormData();
       fd.append('text', text);
       if (currentUser) fd.append('user_info', JSON.stringify(currentUser));

@@ -18,7 +18,7 @@ from analyzer import perform_full_analysis
 app = Flask(__name__, static_folder='../frontend/public', static_url_path='')
 CORS(app)
 
-UPLOAD_MAX_SIZE = 10 * 1024 * 1024  # 10MB
+UPLOAD_MAX_SIZE = 1 * 1024 * 1024  # 1MB
 
 # 사용자 정보 저장 경로
 USER_LOG_PATH = os.path.join(os.path.dirname(__file__), '..', 'data', 'users.csv')
@@ -89,7 +89,7 @@ def analyze_email():
             
             file_bytes = f.read()
             if len(file_bytes) > UPLOAD_MAX_SIZE:
-                return jsonify({'error': '파일 크기가 너무 큽니다. (최대 10MB)'}), 400
+                return jsonify({'error': '파일 크기가 너무 큽니다. (최대 1MB)'}), 400
             
             email_data = parse_eml_bytes(file_bytes)
             input_type = 'eml_file'
