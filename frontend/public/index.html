@@ -649,7 +649,6 @@ async function analyze() {
     if (currentTab === 'file' && selectedFile) {
       const fd = new FormData();
       fd.append('file', selectedFile);
-      if (currentUser) fd.append('user_info', JSON.stringify(currentUser));
       response = await fetch('/api/analyze', { method: 'POST', body: fd });
     } else if (currentTab === 'text') {
       const text = document.getElementById('headerText').value.trim();
@@ -661,7 +660,6 @@ async function analyze() {
       }
       const fd = new FormData();
       fd.append('text', text);
-      if (currentUser) fd.append('user_info', JSON.stringify(currentUser));
       response = await fetch('/api/analyze', { method: 'POST', body: fd });
     } else {
       alert('파일을 선택하거나 헤더를 입력해 주세요.');
@@ -721,7 +719,6 @@ function renderResults(data) {
         도메인 ${summary.total_domains_analyzed}개 &nbsp;|&nbsp;
         IP ${summary.total_ips_analyzed}개 &nbsp;|&nbsp;
         경유 서버 ${summary.hop_count}개
-        ${currentUser ? ` &nbsp;|&nbsp; 분석자: <strong>${escHtml(currentUser.name)}</strong> (${escHtml(currentUser.company)})` : ''}
       </div>
     </div>
     <div class="score-box">
